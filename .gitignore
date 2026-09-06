@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment / secrets
+.env
+.env.local
+*.pem
+*.key
+
+# Data (raw + processed - usually too large / shouldn't be versioned)
+data/*.csv
+data/processed/
+data/raw/
+*.parquet
+
+# Trained models / large binaries
+models/*.pt
+models/*.npy
+models/*.pkl
+models/*.joblib
+models/*.h5
+models/*.onnx
+*.faiss
+
+# Logs
+*.log
+logs/
+nohup.out
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# FastAPI / uvicorn
+*.sqlite3
+
+# Docker
+*.pid

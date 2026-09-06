@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book Recommender — Project Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #FAF8F3;
+    --panel: #F1EEE4;
+    --ink: #1C1B19;
+    --muted: #6B6558;
+    --green: #3B5D50;
+    --green-dim: #E4EAE6;
+    --brass: #B8863B;
+    --brass-dim: #F3E9D6;
+    --border: #DAD5C8;
+    --mono: 'JetBrains Mono', monospace;
+    --serif: 'Source Serif 4', Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--serif); font-size: 16px; }
+  a { color: var(--green); }
+
+  .shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+
+  nav {
+    border-right: 1px solid var(--border);
+    padding: 28px 20px;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .brand { font-family: var(--serif); font-weight: 700; font-size: 1.05rem; line-height: 1.3; margin-bottom: 4px; }
+  .brand small { display:block; font-family: var(--mono); font-size: 0.7rem; color: var(--muted); font-weight: 400; margin-top: 4px;}
+  .navlinks { margin-top: 32px; display: flex; flex-direction: column; gap: 2px; }
+  .navlinks button {
+    all: unset; cursor: pointer; padding: 9px 10px; border-radius: 3px;
+    font-family: var(--serif); font-size: 0.95rem; color: var(--muted);
+    border-left: 2px solid transparent;
+  }
+  .navlinks button:hover { color: var(--ink); background: var(--panel); }
+  .navlinks button.active { color: var(--ink); border-left-color: var(--brass); background: var(--panel); font-weight: 600; }
+
+  main { padding: 40px 48px 80px; max-width: 980px; }
+  section { display: none; }
+  section.active { display: block; }
+
+  h1 { font-size: 1.7rem; font-weight: 700; margin: 0 0 6px; }
+  h2 { font-size: 1.15rem; font-weight: 600; margin: 36px 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .subtitle { color: var(--muted); margin: 0 0 28px; max-width: 62ch; line-height: 1.5; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); }
+  th { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.02em; color: var(--muted); font-weight: 500; }
+  td.num, th.num { font-family: var(--mono); text-align: right; }
+  tr.money td:first-child { font-weight: 600; }
+  tr.money { background: var(--brass-dim); }
+  tr:hover { background: var(--panel); }
+  tr.clickable { cursor: pointer; }
+
+  .charts { display: flex; flex-direction: column; gap: 24px; margin: 24px 0 8px; }
+  .charts img { width: 100%; border: 1px solid var(--border); background: white; }
+
+  .card { border: 1px solid var(--border); padding: 20px 22px; margin-bottom: 16px; background: white; }
+  .card h3 { margin: 0 0 10px; font-size: 1rem; }
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px 18px; margin-top: 10px; }
+  .metric { }
+  .metric .val { font-family: var(--mono); font-size: 1.05rem; font-weight: 700; }
+  .metric .lbl { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); }
+
+  .k-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .k-tabs button { all: unset; cursor: pointer; font-family: var(--mono); font-size: 0.78rem; padding: 5px 12px; border: 1px solid var(--border); color: var(--muted); }
+  .k-tabs button.active { background: var(--green); color: white; border-color: var(--green); }
+
+  .search-row { display: flex; gap: 8px; margin-bottom: 18px; }
+  .search-row input { flex: 1; padding: 10px 12px; border: 1px solid var(--border); font-family: var(--serif); font-size: 0.95rem; background: white; }
+  .search-row input:focus { outline: none; border-color: var(--green); }
+
+  .book-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 4px; border-bottom: 1px solid var(--border); gap: 12px; }
+  .book-title { font-weight: 600; }
+  .book-meta { color: var(--muted); font-size: 0.86rem; }
+  .book-row button {
+    all: unset; cursor: pointer; font-family: var(--mono); font-size: 0.72rem;
+    border: 1px solid var(--green); color: var(--green); padding: 6px 10px; white-space: nowrap;
+  }
+  .book-row button:hover { background: var(--green); color: white; }
+
+  .rec-panel { border: 1px solid var(--brass); background: var(--brass-dim); padding: 18px 20px; margin: 18px 0 28px; }
+  .rec-panel .seed { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); margin-bottom: 12px; }
+  .rec-item { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px dashed #cbb98a; font-size: 0.92rem; }
+  .rec-item:last-child { border-bottom: none; }
+  .rec-item .sim { font-family: var(--mono); color: var(--brass); font-weight: 700; }
+
+  .phase-list { display: flex; flex-direction: column; }
+  .phase-row { display: grid; grid-template-columns: 90px 1fr; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .phase-row .tag { font-family: var(--mono); font-size: 0.72rem; color: var(--green); font-weight: 700; }
+  .phase-row .file { font-family: var(--mono); font-size: 0.76rem; color: var(--muted); }
+
+  .prose { line-height: 1.65; font-size: 0.96rem; }
+  .prose h1, .prose h2, .prose h3 { border: none; font-size: 1rem; margin: 22px 0 8px; }
+  .prose code { font-family: var(--mono); background: var(--panel); padding: 1px 5px; font-size: 0.85em; }
+  .prose blockquote { border-left: 3px solid var(--brass); margin: 14px 0; padding: 4px 16px; color: var(--muted); font-style: italic; }
+  .prose ul { padding-left: 20px; }
+
+  .loading, .empty { color: var(--muted); font-family: var(--mono); font-size: 0.85rem; padding: 20px 0; }
+  .stat-strip { display: flex; gap: 28px; margin: 4px 0 8px; }
+  .stat-strip .s { }
+  .stat-strip .s .v { font-family: var(--mono); font-weight: 700; font-size: 1.3rem; }
+  .stat-strip .s .l { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav>
+    <div class="brand">Book Recommender<small>Classical → Deep → Generative</small></div>
+    <div class="navlinks">
+      <button data-tab="leaderboard" class="active">Leaderboard</button>
+      <button data-tab="compare">Model detail</button>
+      <button data-tab="catalog">Catalog &amp; recommend</button>
+      <button data-tab="architecture">Architecture</button>
+      <button data-tab="limitations">Limitations</button>
+    </div>
+  </nav>
+
+  <main>
+    <!-- LEADERBOARD -->
+    <section id="leaderboard" class="active">
+      <h1>Model Leaderboard</h1>
+      <p class="subtitle">Nine models, one shared evaluation harness. Ranked by NDCG@10 over 5,000 held-out users, next-item prediction across the full 10,000-book catalog.</p>
+      <div id="stat-strip" class="stat-strip"></div>
+      <div class="charts">
+        <img src="/charts/leaderboard_bar.png" alt="Leaderboard bar chart">
+        <img src="/charts/coverage_vs_accuracy.png" alt="Coverage vs accuracy scatter">
+      </div>
+      <h2>Full results</h2>
+      <div id="leaderboard-table" class="loading">Loading models/leaderboard.csv…</div>
+    </section>
+
+    <!-- MODEL DETAIL -->
+    <section id="compare">
+      <h1>Model detail</h1>
+      <p class="subtitle">Per-model metrics at k=5/10/20, pulled directly from each phase's results JSON.</p>
+      <div id="model-picker" class="k-tabs"></div>
+      <div id="model-detail" class="empty">Pick a model above.</div>
+    </section>
+
+    <!-- CATALOG -->
+    <section id="catalog">
+      <h1>Catalog &amp; live recommend demo</h1>
+      <p class="subtitle">Browses <code>data/processed/item_meta.csv</code> directly. "Recommend" runs a real TF-IDF + cosine-similarity model over each book's title/author/tags, computed on request — no cached or fake results.</p>
+      <div class="search-row">
+        <input id="book-search" type="text" placeholder="Search title or author (e.g. Tolkien, dystopian, Hunger Games)…">
+      </div>
+      <div id="book-list" class="loading">Loading catalog…</div>
+      <div id="rec-panel"></div>
+    </section>
+
+    <!-- ARCHITECTURE -->
+    <section id="architecture">
+      <h1>Architecture by phase</h1>
+      <p class="subtitle">Nine models across four phases, sharing one evaluation harness (<code>src/eval_utils.py</code>) so every number on the leaderboard is directly comparable.</p>
+      <div id="phase-list" class="phase-list loading">Loading…</div>
+    </section>
+
+    <!-- LIMITATIONS -->
+    <section id="limitations">
+      <h1>Honest limitations</h1>
+      <p class="subtitle">Straight from the project's README and reports — including the MF and LightGCN compute tradeoffs.</p>
+      <div id="limitations-content" class="prose loading">Loading…</div>
+    </section>
+  </main>
+</div>
+
+<script>
+const API = "";
+
+// ---- tab switching ----
+document.querySelectorAll(".navlinks button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".navlinks button").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll("main section").forEach(s => s.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.tab).classList.add("active");
+  });
+});
+
+const fmt = (v, d=4) => (v === null || v === undefined) ? "—" : Number(v).toFixed(d);
+
+// ---- stats strip + leaderboard ----
+async function loadStats() {
+  const r = await fetch(`${API}/api/stats`);
+  const s = await r.json();
+  document.getElementById("stat-strip").innerHTML = `
+    <div class="s"><div class="v">${s.n_users.toLocaleString()}</div><div class="l">USERS</div></div>
+    <div class="s"><div class="v">${s.n_items.toLocaleString()}</div><div class="l">BOOKS</div></div>
+    <div class="s"><div class="v">${s.n_models}</div><div class="l">MODELS</div></div>
+  `;
+}
+
+async function loadLeaderboard() {
+  const r = await fetch(`${API}/api/leaderboard`);
+  const rows = await r.json();
+  const money = new Set(["sasrec_lite", "semantic_id_generative"]);
+  const html = `
+    <table>
+      <thead><tr>
+        <th>Model</th><th class="num">NDCG@10</th><th class="num">Recall@10</th>
+        <th class="num">Coverage@10</th><th class="num">Diversity@10</th><th class="num">Pop bias@10</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map(m => `
+          <tr class="${money.has(m.model) ? 'money' : ''}">
+            <td>${m.display_name}</td>
+            <td class="num">${fmt(m["ndcg@10"])}</td>
+            <td class="num">${fmt(m["recall@10"])}</td>
+            <td class="num">${fmt(m["coverage@10"])}</td>
+            <td class="num">${fmt(m["diversity@10"])}</td>
+            <td class="num">${fmt(m["pop_bias@10"], 1)}</td>
+          </tr>`).join("")}
+      </tbody>
+    </table>`;
+  document.getElementById("leaderboard-table").outerHTML = `<div id="leaderboard-table">${html}</div>`;
+  return rows;
+}
+
+// ---- model detail ----
+let currentModel = null, currentK = "10";
+function renderModelDetail(data) {
+  const ks = ["5", "10", "20"];
+  const m = data.metrics_by_k;
+  const keys = Object.keys(m).filter(k => k.endsWith("@" + currentK));
+  document.getElementById("model-detail").innerHTML = `
+    <div class="card">
+      <h3>${data.display_name} <span style="color:var(--muted); font-weight:400; font-family:var(--mono); font-size:0.75rem;">— ${data.source_file}</span></h3>
+      <div class="k-tabs" id="k-tabs">
+        ${ks.map(k => `<button data-k="${k}" class="${k===currentK?'active':''}">k=${k}</button>`).join("")}
+      </div>
+      <div class="metric-grid">
+        ${keys.map(k => `<div class="metric"><div class="val">${fmt(m[k], m[k] > 5 ? 2 : 4)}</div><div class="lbl">${k.split("@")[0].toUpperCase()}</div></div>`).join("")}
+      </div>
+    </div>`;
+  document.querySelectorAll("#k-tabs button").forEach(b => {
+    b.addEventListener("click", () => { currentK = b.dataset.k; renderModelDetail(data); });
+  });
+}
+
+async function pickModel(modelKey, btn) {
+  document.querySelectorAll("#model-picker button").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  currentModel = modelKey;
+  document.getElementById("model-detail").innerHTML = `<div class="loading">Loading ${modelKey}…</div>`;
+  try {
+    const r = await fetch(`${API}/api/model/${modelKey}`);
+    if (!r.ok) throw new Error("not found");
+    const data = await r.json();
+    renderModelDetail(data);
+  } catch (e) {
+    document.getElementById("model-detail").innerHTML = `<div class="empty">No detailed results file for this model.</div>`;
+  }
+}
+
+async function loadModelPicker(leaderboardRows) {
+  const el = document.getElementById("model-picker");
+  el.innerHTML = leaderboardRows.map(m => `<button data-model="${m.model}">${m.display_name}</button>`).join("");
+  el.querySelectorAll("button").forEach(b => b.addEventListener("click", () => pickModel(b.dataset.model, b)));
+}
+
+// ---- catalog + recommend ----
+let searchTimer = null;
+async function loadBooks(query="") {
+  const r = await fetch(`${API}/api/books?search=${encodeURIComponent(query)}&limit=25`);
+  const data = await r.json();
+  const list = document.getElementById("book-list");
+  if (data.results.length === 0) {
+    list.innerHTML = `<div class="empty">No books match "${query}".</div>`;
+    return;
+  }
+  list.innerHTML = `<div style="font-family:var(--mono); font-size:0.72rem; color:var(--muted); margin-bottom:8px;">${data.total.toLocaleString()} match${data.total===1?'':'es'}${data.total>25?' — showing first 25':''}</div>` +
+    data.results.map(b => `
+      <div class="book-row">
+        <div>
+          <div class="book-title">${b.title}</div>
+          <div class="book-meta">${b.authors}${b.year ? " · " + b.year : ""}${b.average_rating ? " · ★" + b.average_rating.toFixed(2) : ""}</div>
+        </div>
+        <button data-i="${b.i}">Recommend similar</button>
+      </div>`).join("");
+  list.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", () => getRecommendations(btn.dataset.i));
+  });
+}
+
+async function getRecommendations(i) {
+  const panel = document.getElementById("rec-panel");
+  panel.innerHTML = `<div class="loading">Scoring similarity against 10,000 books…</div>`;
+  const r = await fetch(`${API}/api/recommend/${i}?k=8`);
+  const data = await r.json();
+  panel.innerHTML = `
+    <div class="rec-panel">
+      <div class="seed">SIMILAR TO — ${data.seed.title} (${data.seed.authors})<br>${data.method}</div>
+      ${data.recommendations.map(rec => `
+        <div class="rec-item">
+          <span>${rec.title} — <span style="color:var(--muted)">${rec.authors}</span></span>
+          <span class="sim">${rec.similarity}</span>
+        </div>`).join("")}
+    </div>`;
+  panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+document.getElementById("book-search").addEventListener("input", (e) => {
+  clearTimeout(searchTimer);
+  const q = e.target.value;
+  searchTimer = setTimeout(() => loadBooks(q), 250);
+});
+
+// ---- architecture ----
+async function loadArchitecture() {
+  const r = await fetch(`${API}/api/architecture`);
+  const data = await r.json();
+  document.getElementById("phase-list").outerHTML = `
+    <div id="phase-list" class="phase-list">
+      ${data.phases.map(p => `
+        <div class="phase-row">
+          <div class="tag">${p.phase}</div>
+          <div><div>${p.name}</div><div class="file">${p.file}</div></div>
+        </div>`).join("")}
+    </div>`;
+}
+
+// ---- limitations (light markdown render) ----
+function mdToHtml(md) {
+  return md
+    .split("\n\n").map(block => {
+      if (block.startsWith("### ")) return `<h3>${block.slice(4)}</h3>`;
+      if (block.startsWith("## ")) return `<h2>${block.slice(3)}</h2>`;
+      if (block.startsWith("# ")) return `<h1>${block.slice(2)}</h1>`;
+      if (block.startsWith("> ")) return `<blockquote>${block.replace(/^> ?/gm, "")}</blockquote>`;
+      if (block.trim().startsWith("- ")) return `<ul>${block.split("\n").map(l => `<li>${l.replace(/^- /, "")}</li>`).join("")}</ul>`;
+      return `<p>${block.replace(/\n/g, " ")}</p>`;
+    }).join("\n")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>");
+}
+
+async function loadLimitations() {
+  const r = await fetch(`${API}/api/limitations`);
+  const data = await r.json();
+  document.getElementById("limitations-content").innerHTML =
+    mdToHtml(data.honest_limitations_from_readme || "") +
+    `<h2 style="border-bottom:1px solid var(--border); padding-bottom:8px; margin-top:34px;">Compute tradeoffs (MF &amp; LightGCN)</h2>` +
+    mdToHtml(data.compute_tradeoffs_md || "");
+}
+
+// ---- boot ----
+(async function init() {
+  await loadStats();
+  const rows = await loadLeaderboard();
+  await loadModelPicker(rows);
+  await loadBooks();
+  await loadArchitecture();
+  await loadLimitations();
+})();
+</script>
+</body>
+</html>

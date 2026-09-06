@@ -1,0 +1,9 @@
+torch
+scikit-learn
+implicit
+faiss-cpu
+pandas
+numpy
+scipy
+fastapi
+uvicorn
