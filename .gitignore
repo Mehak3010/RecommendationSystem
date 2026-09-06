@@ -32,6 +32,7 @@ data/raw/
 *.parquet
 
 # Trained models / large binaries
+models/*.npy
 !models/als_item_factors.npy
 !models/als_user_factors.npy
 models/*.pt
