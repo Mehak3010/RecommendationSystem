@@ -49,6 +49,18 @@ leaderboard_df = pd.read_csv(MODELS_DIR / "leaderboard.csv").rename(
 item_meta = pd.read_csv(DATA_DIR / "item_meta.csv")
 mappings = json.loads((DATA_DIR / "mappings.json").read_text())
 
+# Real, trained ALS collaborative-filtering factors -- optional, since a
+# deployment may omit them, but this is what powers genuinely personalized
+# (not just text-similarity) recommendations below.
+import numpy as np
+_als_item_path = MODELS_DIR / "als_item_factors.npy"
+_als_user_path = MODELS_DIR / "als_user_factors.npy"
+als_item = np.load(_als_item_path) if _als_item_path.exists() else None
+als_user = np.load(_als_user_path) if _als_user_path.exists() else None
+
+_shelves_path = DATA_DIR / "demo_shelves.json"
+demo_shelves = json.loads(_shelves_path.read_text()) if _shelves_path.exists() else {}
+
 MODEL_DISPLAY_NAMES = {
     "sasrec_lite": "SASRec-lite",
     "semantic_id_generative": "Semantic-ID Generative",
@@ -209,6 +221,56 @@ def recommend(i: int, k: int = 10):
         },
         "method": "TF-IDF (title + authors + tags) cosine similarity — computed live from data/processed/item_meta.csv",
         "recommendations": recommend_similar(row_idx, k=k),
+    }
+
+
+@app.get("/api/random_reader")
+def random_reader():
+    """Pick a sample reader with a real, displayable interaction history
+    (see src/make_demo_shelves.py) so the personalized-recommend demo below
+    has something authentic to show, not just a bare user id."""
+    if not demo_shelves:
+        raise HTTPException(503, "no demo reader shelves bundled with this deployment")
+    import random
+    user_id = random.choice(list(demo_shelves.keys()))
+    return {"user_id": int(user_id), "shelf": demo_shelves[user_id]}
+
+
+@app.get("/api/recommend_for_reader/{user_id}")
+def recommend_for_reader(user_id: int, k: int = 10):
+    """Genuinely personalized recommendations from the trained ALS model
+    (models/als_item_factors.npy + als_user_factors.npy) -- this is real
+    collaborative filtering learned from 5.9M ratings, not a text-similarity
+    stand-in. Any internal user id (0 to n_users-1) works; ids that also
+    appear in demo_shelves.json additionally get a displayable reading
+    history alongside the recommendations."""
+    if als_item is None or als_user is None:
+        raise HTTPException(503, "ALS model factors not bundled with this deployment")
+    if user_id < 0 or user_id >= als_user.shape[0]:
+        raise HTTPException(404, f"reader id must be between 0 and {als_user.shape[0]-1}")
+
+    scores = als_item @ als_user[user_id]
+    top_idx = np.argsort(-scores)[:k]
+    item_meta_idx = item_meta.set_index("i")
+    recs = []
+    for i in top_idx:
+        i = int(i)
+        if i not in item_meta_idx.index:
+            continue
+        row = item_meta_idx.loc[i]
+        recs.append({
+            "i": i,
+            "book_id": int(row["book_id"]),
+            "title": row["title"],
+            "authors": row["authors"],
+            "average_rating": float(row["average_rating"]) if pd.notna(row["average_rating"]) else None,
+            "score": round(float(scores[i]), 4),
+        })
+    return {
+        "user_id": user_id,
+        "method": "ALS collaborative filtering (models/als_*.npy) — trained on 5.9M real ratings",
+        "shelf": demo_shelves.get(str(user_id), []),
+        "recommendations": recs,
     }
 
 

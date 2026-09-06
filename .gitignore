@@ -27,10 +27,13 @@ data/*.csv
 data/processed/*
 !data/processed/item_meta.csv
 !data/processed/mappings.json
+!data/processed/demo_shelves.json
 data/raw/
 *.parquet
 
 # Trained models / large binaries
+!models/als_item_factors.npy
+!models/als_user_factors.npy
 models/*.pt
 models/*.npy
 models/*.pkl
