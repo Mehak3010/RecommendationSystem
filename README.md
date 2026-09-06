@@ -41,6 +41,8 @@ Phase 3  Unified evaluation     -> src/phase3_compare.py        (leaderboard + c
 Phase 5  Serving                -> api/serve.py                 (FAISS retrieval -> ALS re-rank, FastAPI)
 Phase 6a Graph neural net       -> src/phase6a_lightgcn.py      (LightGCN, from scratch, no torch-geometric)
 Phase 6b Generative retrieval   -> src/phase6b_generative_retrieval.py  (semantic-ID transformer)
+Phase 7  Project dashboard      -> Dashboard/dashboard.py + Dashboard/static/index.html
+                                    (FastAPI + vanilla JS UI over the real leaderboard/data — not mocked)
 ```
 
 Shared evaluation code (`src/eval_utils.py`) is used by every phase so all
@@ -74,6 +76,21 @@ python3 src/phase3_compare.py
 cd api && uvicorn serve:app --reload
 curl "http://localhost:8000/recommend/42?k=5"
 ```
+
+## Dashboard
+
+A browsable UI over the real project artifacts — leaderboard, per-model
+metrics, a live TF-IDF recommend demo over the actual book catalog, the
+architecture map, and the compute-tradeoffs writeup.
+
+```bash
+cd Dashboard
+uvicorn dashboard:app --host 0.0.0.0 --port 8010 --reload
+```
+
+Then open http://localhost:8010/. Requires `data/processed/` and
+`models/leaderboard.csv` to already exist (run Phase 0 and the training
+scripts first — see "Try it" above).
 
 ## Resume line
 
