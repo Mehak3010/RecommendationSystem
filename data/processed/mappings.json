@@ -1,0 +1,7 @@
+{
+  "n_users": 53424,
+  "n_items": 10000,
+  "min_user_interactions": 5,
+  "min_item_interactions": 5,
+  "implicit_threshold": 4
+}
