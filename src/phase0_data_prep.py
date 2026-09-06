@@ -20,8 +20,13 @@ from scipy import sparse
 import json
 import os
 
-DATA_DIR = "/home/claude/recsys_project/data"
-OUT_DIR = "/home/claude/recsys_project/data/processed"
+# Portable path: this file lives at <repo_root>/src/phase0_data_prep.py,
+# so the repo root is one directory up from this file's own location --
+# works regardless of which machine or OS this is run on, or what the
+# current working directory is when you invoke `python3 src/phase0_data_prep.py`.
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(ROOT, "data")
+OUT_DIR = os.path.join(ROOT, "data", "processed")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 MIN_USER_INTERACTIONS = 5   # drop users with fewer than this many ratings

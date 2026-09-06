@@ -15,13 +15,15 @@ import torch
 import torch.nn as nn
 from sklearn.feature_extraction.text import TfidfVectorizer
 import implicit
-import sys, time
+import sys, time, os
 
-sys.path.append("/home/claude/recsys_project/src")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(ROOT, "src"))
 from eval_utils import evaluate_model
 
-DATA = "/home/claude/recsys_project/data/processed"
-RESULTS_PATH = "/home/claude/recsys_project/models/phase1_results.json"
+DATA = os.path.join(ROOT, "data", "processed")
+MODELS_DIR = os.path.join(ROOT, "models")
+RESULTS_PATH = os.path.join(MODELS_DIR, "phase1_results.json")
 
 def load():
     train = pd.read_csv(f"{DATA}/train.csv")
@@ -98,8 +100,8 @@ def main():
     print(f"  ALS trained in {time.time()-t0:.1f}s")
     als_scores = als.user_factors[eval_user_idx] @ als.item_factors.T
     all_results["als"] = evaluate_model(als_scores, gt_eval, seen_eval, item_pop_rank, tag_features)
-    np.save("/home/claude/recsys_project/models/als_item_factors.npy", als.item_factors)
-    np.save("/home/claude/recsys_project/models/als_user_factors.npy", als.user_factors)
+    np.save(os.path.join(MODELS_DIR, "als_item_factors.npy"), als.item_factors)
+    np.save(os.path.join(MODELS_DIR, "als_user_factors.npy"), als.user_factors)
 
     # ---------- 4. Matrix Factorization from scratch (PyTorch, SGD + BPR-style loss) ----------
     print("[4/4] Matrix Factorization (PyTorch, from scratch)...")
@@ -160,7 +162,7 @@ def main():
         ib = mf.i_bias.weight.numpy().squeeze(-1)
     mf_scores = U[eval_user_idx] @ I.T + ub[eval_user_idx, None] + ib[None, :]
     all_results["mf_bpr_pytorch"] = evaluate_model(mf_scores, gt_eval, seen_eval, item_pop_rank, tag_features)
-    torch.save(mf.state_dict(), "/home/claude/recsys_project/models/mf_bpr.pt")
+    torch.save(mf.state_dict(), os.path.join(MODELS_DIR, "mf_bpr.pt"))
 
     # ---------- Report ----------
     print("\n" + "="*70)

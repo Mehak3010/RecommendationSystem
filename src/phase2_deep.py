@@ -19,11 +19,13 @@ import torch.nn as nn
 from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-sys.path.append("/home/claude/recsys_project/src")
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(ROOT, "src"))
 from eval_utils import evaluate_model
 from phase1_baselines import load, build_seen_and_gt
 
-MODELS_DIR = "/home/claude/recsys_project/models"
+MODELS_DIR = os.path.join(ROOT, "models")
 RESULTS_PATH = f"{MODELS_DIR}/phase2_results.json"
 
 def train_pairwise(model, score_fn, pos_pairs, n_items, n_epochs=3, batch_size=8192, lr=0.005, reg=1e-6, tag=""):

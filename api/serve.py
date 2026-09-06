@@ -17,11 +17,13 @@ import numpy as np
 import faiss
 import json
 import time
+import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-MODELS_DIR = "/home/claude/recsys_project/models"
-DATA_DIR = "/home/claude/recsys_project/data/processed"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODELS_DIR = os.path.join(ROOT, "models")
+DATA_DIR = os.path.join(ROOT, "data", "processed")
 
 app = FastAPI(title="Book Recommender API", version="0.1")
 

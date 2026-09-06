@@ -19,11 +19,13 @@ import pandas as pd
 import torch
 import torch.nn as nn
 
-sys.path.append("/home/claude/recsys_project/src")
+import os
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(ROOT, "src"))
 from eval_utils import evaluate_model
 from phase1_baselines import load, build_seen_and_gt
 
-MODELS_DIR = "/home/claude/recsys_project/models"
+MODELS_DIR = os.path.join(ROOT, "models")
 MAX_LEN = 50
 PAD = 0  # item ids are shifted +1 so 0 can be the padding token
 
