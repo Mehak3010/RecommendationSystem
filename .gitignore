@@ -24,7 +24,9 @@ ENV/
 
 # Data (raw + processed - usually too large / shouldn't be versioned)
 data/*.csv
-data/processed/
+data/processed/*
+!data/processed/item_meta.csv
+!data/processed/mappings.json
 data/raw/
 *.parquet
 
