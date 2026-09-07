@@ -248,13 +248,24 @@
       <div class="catalog-grid">
         <div class="catalog-col">
           <div class="section-label">FIND SIMILAR TITLES — TF-IDF text similarity, computed live</div>
-          <div class="search-row"><input id="book-search" type="text" placeholder="Search title or author…"></div>
+          <div class="search-row" style="display:flex; gap:8px;">
+            <select id="genre-select" style="flex:0 0 150px; padding:9px 8px; border:1px solid var(--line); background:var(--card-raised); font-family:var(--mono); font-size:0.78rem; color:var(--ink);">
+              <option value="">All genres</option>
+            </select>
+            <input id="book-search" type="text" placeholder="Search title or author…" style="flex:1;">
+          </div>
+          <div id="book-count" class="section-label" style="color:var(--pencil);"></div>
           <div id="book-list" class="scroll-list loading">Loading catalog…</div>
           <div id="rec-panel" class="rec-list" style="display:none;"></div>
         </div>
         <div class="catalog-col">
           <div class="section-label">PERSONALIZED PICKS — real ALS model, trained on 5.9M ratings</div>
-          <button class="reader-btn" id="random-reader-btn">Pull a random reader's card →</button>
+          <div style="display:flex; gap:8px;">
+            <select id="reader-genre-select" style="flex:0 0 150px; padding:9px 8px; border:1px solid var(--line); background:var(--card-raised); font-family:var(--mono); font-size:0.78rem; color:var(--ink);">
+              <option value="">All genres</option>
+            </select>
+            <button class="reader-btn" id="random-reader-btn" style="flex:1;">Pull a random reader's card →</button>
+          </div>
           <div id="reader-shelf" class="shelf-list">
             <div class="empty">No reader pulled yet.</div>
           </div>
@@ -459,14 +470,48 @@ async function loadModelPicker(rows) {
   if (rows.length) pickModel(rows[0].model, el.querySelector("button"));
 }
 
+// ---- catalog: genre picker ----
+async function loadGenres() {
+  const r = await fetch(`${API}/api/genres`);
+  const data = await r.json();
+  const sorted = [...data].sort((a, b) => b.count - a.count);
+  const populate = (sel) => sorted.forEach(g => {
+    const opt = document.createElement("option");
+    opt.value = g.key;
+    opt.textContent = `${g.label} (${g.count})`;
+    sel.appendChild(opt);
+  });
+  const catalogSel = document.getElementById("genre-select");
+  const readerSel = document.getElementById("reader-genre-select");
+  populate(catalogSel);
+  populate(readerSel);
+  catalogSel.addEventListener("change", () => loadBooks(document.getElementById("book-search").value));
+  readerSel.addEventListener("change", () => {
+    const currentUserId = document.getElementById("reader-shelf").dataset.userId;
+    if (currentUserId) getPersonalized(currentUserId);
+  });
+}
+
 // ---- catalog: similar titles ----
 let searchTimer = null;
 async function loadBooks(query="") {
-  const r = await fetch(`${API}/api/books?search=${encodeURIComponent(query)}&limit=25`);
-  const data = await r.json();
+  const genre = document.getElementById("genre-select").value;
   const list = document.getElementById("book-list");
+  const countEl = document.getElementById("book-count");
+  list.innerHTML = `<div class="loading">Searching…</div>`;
+  const params = new URLSearchParams({ search: query, limit: 25 });
+  if (genre) params.set("genre", genre);
+  const r = await fetch(`${API}/api/books?${params.toString()}`);
+  const data = await r.json();
+
+  countEl.textContent = query || genre
+    ? `${data.total} of ${data.total_catalog.toLocaleString()} titles match`
+    : `showing 25 of ${data.total_catalog.toLocaleString()} titles`;
+
   if (data.results.length === 0) {
-    list.innerHTML = `<div class="empty">No titles match "${query}".</div>`;
+    list.innerHTML = `<div class="empty">No titles match${query ? ` "${query}"` : ""}${genre ? " in this genre" : ""}.<br><br>` +
+      `This catalog is the goodbooks-10k dataset — 10,000 well-known, mostly English-language titles. ` +
+      `A specific book you're thinking of may simply not be in that list, even if it exists.</div>`;
     return;
   }
   list.innerHTML = data.results.map(b => `
@@ -503,6 +548,7 @@ async function pullRandomReader() {
     const r = await fetch(`${API}/api/random_reader`);
     if (!r.ok) throw new Error();
     const data = await r.json();
+    shelfEl.dataset.userId = data.user_id;
     shelfEl.innerHTML = `<div class="section-label" style="margin-bottom:6px;">READER #${data.user_id} — already rated highly:</div>` +
       data.shelf.map(b => `<div class="shelf-item"><span>${b.title}</span><span style="color:var(--pencil); font-size:0.72rem;">${b.authors}</span></div>`).join("");
     getPersonalized(data.user_id);
@@ -513,11 +559,18 @@ async function pullRandomReader() {
 
 async function getPersonalized(userId) {
   const recEl = document.getElementById("reader-recs");
+  const genre = document.getElementById("reader-genre-select").value;
   recEl.innerHTML = `<div class="loading">Scoring against ALS factors…</div>`;
   try {
-    const r = await fetch(`${API}/api/recommend_for_reader/${userId}?k=8`);
+    const params = new URLSearchParams({ k: 8 });
+    if (genre) params.set("genre", genre);
+    const r = await fetch(`${API}/api/recommend_for_reader/${userId}?${params.toString()}`);
     if (!r.ok) throw new Error();
     const data = await r.json();
+    if (data.recommendations.length === 0) {
+      recEl.innerHTML = `<div class="empty">No titles in this genre scored for reader #${userId}.</div>`;
+      return;
+    }
     recEl.innerHTML = `<div class="section-label" style="margin-bottom:6px;">${data.method}</div>` +
       data.recommendations.map(rec => `<div class="rec-item"><span>${rec.title} — <span style="color:var(--pencil)">${rec.authors}</span></span><span class="score">${rec.score}</span></div>`).join("");
   } catch (e) {
@@ -562,6 +615,7 @@ async function loadLimitations() {
   await loadStats();
   const rows = await loadLeaderboard();
   await loadModelPicker(rows);
+  await loadGenres();
   await loadBooks();
   await loadArchitecture();
   await loadLimitations();
