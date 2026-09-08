@@ -49,6 +49,37 @@ leaderboard_df = pd.read_csv(MODELS_DIR / "leaderboard.csv").rename(
 item_meta = pd.read_csv(DATA_DIR / "item_meta.csv")
 mappings = json.loads((DATA_DIR / "mappings.json").read_text())
 
+# Cover art + rating distribution are optional columns -- older
+# item_meta.csv builds (before phase0 was extended) won't have them, so the
+# dashboard degrades gracefully to text-only cards rather than erroring.
+_HAS_COVER = "small_image_url" in item_meta.columns
+_HAS_RATING_DIST = all(c in item_meta.columns for c in ["ratings_1", "ratings_2", "ratings_3", "ratings_4", "ratings_5"])
+
+
+def _book_card(row) -> dict:
+    """Shared shape for a book across /api/books, /api/recommend/{i}, and
+    /api/recommend_for_reader -- so the frontend renders one consistent
+    card component everywhere instead of three slightly different shapes."""
+    card = {
+        "i": int(row["i"]),
+        "book_id": int(row["book_id"]),
+        "title": row["title"],
+        "authors": row["authors"],
+        "year": int(row["original_publication_year"]) if pd.notna(row.get("original_publication_year")) else None,
+        "average_rating": float(row["average_rating"]) if pd.notna(row.get("average_rating")) else None,
+        "cover_url": row["small_image_url"] if _HAS_COVER and pd.notna(row.get("small_image_url")) else None,
+    }
+    if _HAS_RATING_DIST:
+        dist = [int(row[f"ratings_{n}"]) for n in range(1, 6)]
+        total = sum(dist) or 1
+        card["rating_count"] = total
+        card["rating_dist_pct"] = [round(100 * d / total, 1) for d in dist]
+    else:
+        card["rating_count"] = int(row["ratings_count"]) if "ratings_count" in row and pd.notna(row.get("ratings_count")) else None
+        card["rating_dist_pct"] = None
+    return card
+
+
 # Real, trained ALS collaborative-filtering factors -- optional, since a
 # deployment may omit them, but this is what powers genuinely personalized
 # (not just text-similarity) recommendations below.
@@ -155,16 +186,9 @@ def recommend_similar(item_row_idx: int, k: int = 10):
     out = []
     for i in order:
         row = item_meta.iloc[i]
-        out.append(
-            {
-                "i": int(row["i"]),
-                "book_id": int(row["book_id"]),
-                "title": row["title"],
-                "authors": row["authors"],
-                "average_rating": float(row["average_rating"]) if pd.notna(row["average_rating"]) else None,
-                "similarity": round(float(sims[i]), 4),
-            }
-        )
+        card = _book_card(row)
+        card["similarity"] = round(float(sims[i]), 4)
+        out.append(card)
     return out
 
 
@@ -268,15 +292,7 @@ def books(
         "total": total,
         "total_catalog": total_catalog,
         "results": [
-            {
-                "i": int(r["i"]),
-                "book_id": int(r["book_id"]),
-                "title": r["title"],
-                "authors": r["authors"],
-                "year": (None if pd.isna(r["original_publication_year"]) else int(r["original_publication_year"])),
-                "average_rating": float(r["average_rating"]) if pd.notna(r["average_rating"]) else None,
-                "tags_text": r["tags_text"],
-            }
+            {**_book_card(r), "tags_text": r["tags_text"]}
             for _, r in page.iterrows()
         ],
     }
@@ -288,15 +304,7 @@ def book_detail(i: int):
     if row.empty:
         raise HTTPException(404, f"no book with internal id {i}")
     row = row.iloc[0]
-    return {
-        "i": int(row["i"]),
-        "book_id": int(row["book_id"]),
-        "title": row["title"],
-        "authors": row["authors"],
-        "year": None if pd.isna(row["original_publication_year"]) else int(row["original_publication_year"]),
-        "average_rating": float(row["average_rating"]) if pd.notna(row["average_rating"]) else None,
-        "tags_text": row["tags_text"],
-    }
+    return {**_book_card(row), "tags_text": row["tags_text"]}
 
 
 @app.get("/api/recommend/{i}")
@@ -370,14 +378,11 @@ def recommend_for_reader(user_id: int, k: int = 10, genre: str = Query("", descr
         if not np.isfinite(scores[i]) or i not in item_meta_idx.index:
             continue
         row = item_meta_idx.loc[i]
-        recs.append({
-            "i": i,
-            "book_id": int(row["book_id"]),
-            "title": row["title"],
-            "authors": row["authors"],
-            "average_rating": float(row["average_rating"]) if pd.notna(row["average_rating"]) else None,
-            "score": round(float(scores[i]), 4),
-        })
+        row = row.copy()
+        row["i"] = i  # set_index dropped it from the columns
+        card = _book_card(row)
+        card["score"] = round(float(scores[i]), 4)
+        recs.append(card)
     return {
         "user_id": user_id,
         "method": method,
