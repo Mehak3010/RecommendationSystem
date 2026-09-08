@@ -101,7 +101,15 @@ def main():
     item_meta = books[books.book_id.isin(item2idx)].copy()
     item_meta["i"] = item_meta.book_id.map(item2idx)
     item_meta["tags_text"] = item_meta["i"].map(top_tags_per_book).fillna("")
-    item_meta = item_meta[["i", "book_id", "title", "authors", "original_publication_year", "average_rating", "tags_text"]]
+    # small_image_url / ratings_1..5 already exist in books.csv (same download
+    # you already have) -- keeping them through here is what lets the
+    # dashboard show real cover art and a real rating-distribution bar
+    # instead of plain text rows, with no new data source.
+    item_meta = item_meta[[
+        "i", "book_id", "title", "authors", "original_publication_year",
+        "average_rating", "tags_text", "small_image_url",
+        "ratings_count", "ratings_1", "ratings_2", "ratings_3", "ratings_4", "ratings_5",
+    ]]
     item_meta = item_meta.sort_values("i")
 
     # --- Save everything ---
