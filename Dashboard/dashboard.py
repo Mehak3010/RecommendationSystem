@@ -12,9 +12,6 @@ Serves the *real* files from this project — no mocked data:
 
 Recommendations are computed live with a TF-IDF + cosine-similarity model
 over each book's tags/title/author text (data/processed/item_meta.csv).
-This doesn't require the missing two_tower_item_vecs.npy / als_*.npy
-artifacts that api/serve.py expects — it's a real, from-scratch model
-that runs directly against the checked-in data, not a stand-in.
 
 Run with:  uvicorn dashboard:app --host 0.0.0.0 --port 8010 --reload
 Then open  http://localhost:8010/
@@ -49,17 +46,39 @@ leaderboard_df = pd.read_csv(MODELS_DIR / "leaderboard.csv").rename(
 item_meta = pd.read_csv(DATA_DIR / "item_meta.csv")
 mappings = json.loads((DATA_DIR / "mappings.json").read_text())
 
-# Cover art + rating distribution are optional columns -- older
-# item_meta.csv builds (before phase0 was extended) won't have them, so the
-# dashboard degrades gracefully to text-only cards rather than erroring.
 _HAS_COVER = "small_image_url" in item_meta.columns
+_HAS_BIGGER_COVER = "image_url" in item_meta.columns
+_HAS_ISBN = "isbn13" in item_meta.columns
 _HAS_RATING_DIST = all(c in item_meta.columns for c in ["ratings_1", "ratings_2", "ratings_3", "ratings_4", "ratings_5"])
+
+
+def _cover_urls(row) -> list:
+    """Priority-ordered candidate cover images, biggest first.
+
+    goodbooks-10k only ships `small_image_url` (~50x75px) and `image_url`
+    (~98x147px, still small) -- both too small for any card bigger than a
+    thumbnail, which is what was causing the pixelation on Your Shelf.
+    Open Library's covers API can serve a genuinely large (300-600px+)
+    image when it has the ISBN indexed. It doesn't always -- so this stays
+    a fallback chain, not a single source, and the frontend tries each URL
+    in order via onerror until one actually loads.
+    """
+    urls = []
+    if _HAS_ISBN and pd.notna(row.get("isbn13")):
+        isbn = str(int(row["isbn13"]))
+        urls.append(f"https://covers.openlibrary.org/b/isbn/{isbn}-L.jpg?default=false")
+    if _HAS_BIGGER_COVER and pd.notna(row.get("image_url")):
+        urls.append(row["image_url"])
+    if _HAS_COVER and pd.notna(row.get("small_image_url")):
+        urls.append(row["small_image_url"])
+    return urls
 
 
 def _book_card(row) -> dict:
     """Shared shape for a book across /api/books, /api/recommend/{i}, and
     /api/recommend_for_reader -- so the frontend renders one consistent
     card component everywhere instead of three slightly different shapes."""
+    cover_urls = _cover_urls(row)
     card = {
         "i": int(row["i"]),
         "book_id": int(row["book_id"]),
@@ -67,7 +86,10 @@ def _book_card(row) -> dict:
         "authors": row["authors"],
         "year": int(row["original_publication_year"]) if pd.notna(row.get("original_publication_year")) else None,
         "average_rating": float(row["average_rating"]) if pd.notna(row.get("average_rating")) else None,
-        "cover_url": row["small_image_url"] if _HAS_COVER and pd.notna(row.get("small_image_url")) else None,
+        "cover_urls": cover_urls,
+        # kept for backward compatibility with anything (or any saved
+        # localStorage shelf entry) still reading a single cover_url
+        "cover_url": cover_urls[0] if cover_urls else None,
     }
     if _HAS_RATING_DIST:
         dist = [int(row[f"ratings_{n}"]) for n in range(1, 6)]
@@ -80,9 +102,6 @@ def _book_card(row) -> dict:
     return card
 
 
-# Real, trained ALS collaborative-filtering factors -- optional, since a
-# deployment may omit them, but this is what powers genuinely personalized
-# (not just text-similarity) recommendations below.
 import numpy as np
 _als_item_path = MODELS_DIR / "als_item_factors.npy"
 _als_user_path = MODELS_DIR / "als_user_factors.npy"
@@ -126,7 +145,6 @@ def _load_results(fname):
     return _results_cache[fname]
 
 
-# ----------------------------------------------------- content recommender
 item_meta["_text"] = (
     item_meta["title"].fillna("")
     + " "
@@ -137,12 +155,6 @@ item_meta["_text"] = (
 _vectorizer = TfidfVectorizer(max_features=5000, stop_words="english")
 _tfidf = _vectorizer.fit_transform(item_meta["_text"])
 
-# ------------------------------------------------------- genre / theme ---
-# Curated on top of the real Goodreads shelf tags already sitting in
-# tags_text (see src/phase0_data_prep.py) -- these are actual community
-# tags for each book, not invented labels. Each genre is a small set of
-# tag substrings to match against tags_text, so this stays a thin lookup
-# layer over real data rather than a new model.
 GENRES = {
     "sci-fi":      ["science-fiction", "sci-fi", "scifi", "dystopia", "space"],
     "fantasy":     ["fantasy", "magic", "wizards", "dragons"],
@@ -192,13 +204,9 @@ def recommend_similar(item_row_idx: int, k: int = 10):
     return out
 
 
-# --------------------------------------------------------------- routes ---
 @app.get("/api/stats")
 def stats():
-    return {
-        **mappings,
-        "n_models": len(leaderboard_df),
-    }
+    return {**mappings, "n_models": len(leaderboard_df)}
 
 
 @app.get("/api/leaderboard")
@@ -231,43 +239,10 @@ def model_detail(model_key: str):
 
 @app.get("/api/genres")
 def genres():
-    """Genre/theme buckets derived from real Goodreads shelf tags
-    (tags_text), with a live count of how many catalog titles match each
-    one -- lets the catalog UI offer 'just show me sci-fi' instead of only
-    free-text search."""
     return [
         {"key": key, "label": GENRE_LABELS[key], "count": int(_genre_mask(key).sum())}
         for key in GENRES
     ]
-
-
-@app.get("/api/genres/{genre_key}/debug")
-def genre_debug(genre_key: str, sample: int = 15):
-    """Sanity-check view for a genre bucket: shows which raw tag terms it
-    matches on, a sample of titles it caught with their actual tags_text
-    (so you can eyeball false positives), and how it stacks up against the
-    single most common raw tag in the dataset with a similar name (e.g.
-    'fantasy' the shelf tag) as an independent cross-check."""
-    if genre_key not in GENRES:
-        raise HTTPException(404, f"unknown genre '{genre_key}'")
-    mask = _genre_mask(genre_key)
-    matched = item_meta[mask]
-    unmatched_sample = item_meta[~mask].sample(min(5, (~mask).sum()), random_state=0) if (~mask).sum() else item_meta.iloc[0:0]
-    return {
-        "genre": genre_key,
-        "label": GENRE_LABELS[genre_key],
-        "match_terms": GENRES[genre_key],
-        "matched_count": int(mask.sum()),
-        "total_catalog": len(item_meta),
-        "sample_matched": [
-            {"title": r["title"], "authors": r["authors"], "tags_text": r["tags_text"]}
-            for _, r in matched.head(sample).iterrows()
-        ],
-        "sample_unmatched": [
-            {"title": r["title"], "authors": r["authors"], "tags_text": r["tags_text"]}
-            for _, r in unmatched_sample.iterrows()
-        ],
-    }
 
 
 @app.get("/api/books")
@@ -315,11 +290,7 @@ def recommend(i: int, k: int = 10):
     row_idx = row.index[0]
     seed = row.iloc[0]
     return {
-        "seed": {
-            "i": int(seed["i"]),
-            "title": seed["title"],
-            "authors": seed["authors"],
-        },
+        "seed": {"i": int(seed["i"]), "title": seed["title"], "authors": seed["authors"]},
         "method": "TF-IDF (title + authors + tags) cosine similarity — computed live from data/processed/item_meta.csv",
         "recommendations": recommend_similar(row_idx, k=k),
     }
@@ -327,9 +298,6 @@ def recommend(i: int, k: int = 10):
 
 @app.get("/api/random_reader")
 def random_reader():
-    """Pick a sample reader with a real, displayable interaction history
-    (see src/make_demo_shelves.py) so the personalized-recommend demo below
-    has something authentic to show, not just a bare user id."""
     if not demo_shelves:
         raise HTTPException(503, "no demo reader shelves bundled with this deployment")
     import random
@@ -339,25 +307,12 @@ def random_reader():
 
 @app.get("/api/recommend_for_reader/{user_id}")
 def recommend_for_reader(user_id: int, k: int = 10, genre: str = Query("", description="genre key from /api/genres")):
-    """Genuinely personalized recommendations from the trained ALS model
-    (models/als_item_factors.npy + als_user_factors.npy) -- this is real
-    collaborative filtering learned from 5.9M ratings, not a text-similarity
-    stand-in. Any internal user id (0 to n_users-1) works; ids that also
-    appear in demo_shelves.json additionally get a displayable reading
-    history alongside the recommendations.
-
-    Optional `genre`: restricts the ranked candidates to titles in that
-    genre bucket (see /api/genres) before taking the top-k, so 'personalized
-    sci-fi picks for this reader' is answerable without a separate model --
-    same ALS scores, just masked to a subset of the catalog.
-    """
     if als_item is None or als_user is None:
         raise HTTPException(503, "ALS model factors not bundled with this deployment")
     if user_id < 0 or user_id >= als_user.shape[0]:
         raise HTTPException(404, f"reader id must be between 0 and {als_user.shape[0]-1}")
 
     scores = als_item @ als_user[user_id]
-
     method = "ALS collaborative filtering (models/als_*.npy) — trained on 5.9M real ratings"
     if genre:
         if genre not in GENRES:
@@ -379,7 +334,7 @@ def recommend_for_reader(user_id: int, k: int = 10, genre: str = Query("", descr
             continue
         row = item_meta_idx.loc[i]
         row = row.copy()
-        row["i"] = i  # set_index dropped it from the columns
+        row["i"] = i
         card = _book_card(row)
         card["score"] = round(float(scores[i]), 4)
         recs.append(card)

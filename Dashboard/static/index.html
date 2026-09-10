@@ -3,9 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Drawer — Book Recommender Evaluation</title>
+<title>The Drawer — Book Recommender</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
 <style>
   :root {
     --ink: #23241F;
@@ -22,8 +23,14 @@
     --serif: 'Libre Caslon Text', Georgia, serif;
     --mono: 'IBM Plex Mono', monospace;
   }
+
   * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
   body {
     background: var(--card);
     color: var(--ink);
@@ -31,688 +38,2157 @@
     font-size: 14px;
     overflow: hidden;
   }
-  ::selection { background: var(--signal); color: var(--card); }
-  :focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
 
-  h1, h2, h3 { font-family: var(--serif); font-weight: 700; margin: 0; }
+  ::selection {
+    background: var(--signal);
+    color: var(--card);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 2px;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--serif);
+    font-weight: 700;
+    margin: 0;
+  }
+
   a { color: var(--signal); }
-  code { font-family: var(--mono); background: var(--card-raised); padding: 1px 5px; font-size: 0.85em; border: 1px solid var(--line); }
+
+  code {
+    font-family: var(--mono);
+    background: var(--card-raised);
+    padding: 1px 5px;
+    font-size: 0.85em;
+    border: 1px solid var(--line);
+  }
 
   /* ---------------------------------------------------------- shell --- */
-  .shell { display: grid; grid-template-columns: 210px 1fr; height: 100vh; }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 210px 1fr;
+    height: 100vh;
+  }
 
   nav {
-    background: var(--rail); color: var(--rail-text);
-    padding: 22px 0; display: flex; flex-direction: column;
+    background: var(--rail);
+    color: var(--rail-text);
+    padding: 22px 0;
+    display: flex;
+    flex-direction: column;
   }
-  .brand { padding: 0 20px 20px; border-bottom: 1px solid #2C2B24; margin-bottom: 8px; }
-  .brand h1 { font-size: 1.15rem; color: #EFE9DA; line-height: 1.25; }
-  .brand .sub { font-family: var(--mono); font-size: 0.68rem; color: #8B8570; margin-top: 5px; letter-spacing: 0.02em; }
 
-  .drawer-tabs { display: flex; flex-direction: column; margin-top: 6px; }
+  .brand {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid #2C2B24;
+    margin-bottom: 8px;
+  }
+
+  .brand h1 {
+    font-size: 1.15rem;
+    color: #EFE9DA;
+    line-height: 1.25;
+  }
+
+  .brand .sub {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: #8B8570;
+    margin-top: 5px;
+    letter-spacing: 0.02em;
+  }
+
+  .drawer-tabs {
+    display: flex;
+    flex-direction: column;
+    margin-top: 6px;
+  }
+
   .drawer-tabs button {
-    all: unset; cursor: pointer; padding: 11px 20px; font-family: var(--mono);
-    font-size: 0.82rem; color: var(--rail-text); border-left: 3px solid transparent;
-    display: flex; align-items: center; gap: 9px;
+    all: unset;
+    cursor: pointer;
+    padding: 11px 20px;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: var(--rail-text);
+    border-left: 3px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 9px;
   }
-  .drawer-tabs button .num { color: #6B6656; font-size: 0.75rem; }
-  .drawer-tabs button:hover { background: #201F19; color: #EFE9DA; }
-  .drawer-tabs button.active { background: var(--card); color: var(--ink); border-left-color: var(--signal); font-weight: 500; }
-  .drawer-tabs button.active .num { color: var(--signal); }
 
-  .rail-footer { margin-top: auto; padding: 14px 20px 0; border-top: 1px solid #2C2B24; font-size: 0.68rem; color: #706B58; line-height: 1.6; }
-  .rail-footer a { color: #A99B7A; }
+  .drawer-tabs button .num {
+    color: #6B6656;
+    font-size: 0.75rem;
+  }
 
-  main { overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
+  .drawer-tabs button:hover {
+    background: #201F19;
+    color: #EFE9DA;
+  }
+
+  .drawer-tabs button.active {
+    background: var(--card);
+    color: var(--ink);
+    border-left-color: var(--signal);
+    font-weight: 500;
+  }
+
+  .drawer-tabs button.active .num {
+    color: var(--signal);
+  }
+
+  .rail-footer {
+    margin-top: auto;
+    padding: 14px 20px 0;
+    border-top: 1px solid #2C2B24;
+    font-size: 0.68rem;
+    color: #706B58;
+    line-height: 1.6;
+  }
+
+  .rail-footer a {
+    color: #A99B7A;
+  }
+
+  main {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
   .topbar {
-    padding: 16px 30px; border-bottom: 1px solid var(--line);
-    display: flex; align-items: baseline; justify-content: space-between; gap: 20px;
+    padding: 16px 30px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 20px;
     flex-shrink: 0;
   }
-  .topbar h2 { font-size: 1.35rem; }
-  .stat-chips { display: flex; gap: 18px; }
-  .chip { text-align: right; }
-  .chip .v { font-family: var(--mono); font-weight: 600; font-size: 1rem; }
-  .chip .l { font-family: var(--mono); font-size: 0.64rem; color: var(--pencil); }
 
-  .content { flex: 1; overflow: hidden; padding: 20px 30px 24px; display: none; }
-  .content.active { display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+  .topbar h2 {
+    font-size: 1.35rem;
+  }
 
-  /* ------------------------------------------------------------ card -- */
+  .stat-chips {
+    display: flex;
+    gap: 18px;
+  }
+
+  .chip {
+    text-align: right;
+  }
+
+  .chip .v {
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .chip .l {
+    font-family: var(--mono);
+    font-size: 0.64rem;
+    color: var(--pencil);
+  }
+
+  .content {
+    flex: 1;
+    overflow: hidden;
+    padding: 20px 30px 24px;
+    display: none;
+  }
+
+  .content.active {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 0;
+  }
+
+  /* ------------------------------------------------------------ cards --- */
+
   .stamp-card {
-    background: var(--card-raised); border: 1px solid var(--line);
-    padding: 16px 18px; position: relative;
-  }
-  .stamp-card h3 { font-size: 0.98rem; margin-bottom: 10px; }
-  .stamp-card .call-no {
-    position: absolute; top: 14px; right: 16px; font-family: var(--mono);
-    font-size: 0.66rem; color: var(--pencil);
+    background: var(--card-raised);
+    border: 1px solid var(--line);
+    padding: 16px 18px;
+    position: relative;
   }
 
-  /* --------------------------------------------------- leaderboard tab */
-  .lb-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; min-height: 0; flex: 1; }
-  .lb-left { display: flex; flex-direction: column; gap: 16px; min-height: 0; }
-  .chart-card { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-  .chart-card svg { flex: 1; width: 100%; height: 100%; }
+  .stamp-card h3 {
+    font-size: 0.98rem;
+    margin-bottom: 10px;
+  }
 
-  .top-pick { border-color: var(--signal); }
-  .top-pick .call-no { color: var(--signal); }
-  .top-pick .big-num { font-family: var(--mono); font-size: 2.1rem; font-weight: 600; color: var(--signal); line-height: 1; margin: 6px 0 2px; }
-  .top-pick .big-lbl { font-family: var(--mono); font-size: 0.68rem; color: var(--pencil); }
-  .top-pick p { font-size: 0.85rem; line-height: 1.55; margin: 12px 0 0; color: var(--ink); }
+  /* --------------------------------------------------------- catalog --- */
 
-  .notes-list { font-size: 0.83rem; line-height: 1.55; padding-left: 18px; margin: 0; }
-  .notes-list li { margin-bottom: 8px; }
-  .notes-list li:last-child { margin-bottom: 0; }
+  .model-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
 
-  .table-wrap { max-height: 190px; overflow-y: auto; border: 1px solid var(--line); }
-  table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
-  thead th { position: sticky; top: 0; background: var(--card-raised); text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); font-weight: 500; color: var(--pencil); }
-  td { padding: 7px 10px; border-bottom: 1px solid var(--line); }
-  td.num, th.num { font-family: var(--mono); text-align: right; }
-  tr.money td:first-child::before { content: "★ "; color: var(--signal); }
+  .model-tabs button {
+    all: unset;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    padding: 6px 11px;
+    border: 1px solid var(--line);
+    color: var(--pencil);
+  }
 
-  .tooltip { position: absolute; background: var(--ink); color: var(--card); font-family: var(--mono); font-size: 0.72rem; padding: 5px 9px; pointer-events: none; opacity: 0; transition: opacity 0.1s; white-space: nowrap; z-index: 5; }
-  .tooltip.show { opacity: 1; }
+  .model-tabs button:hover {
+    border-color: var(--moss);
+    color: var(--moss);
+  }
 
-  /* ----------------------------------------------------- model detail */
-  .model-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
-  .model-tabs button { all: unset; cursor: pointer; font-family: var(--mono); font-size: 0.74rem; padding: 6px 11px; border: 1px solid var(--line); color: var(--pencil); }
-  .model-tabs button.active { background: var(--ink); color: var(--card); border-color: var(--ink); }
-  .metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 10px 16px; margin-top: 14px; }
-  .metric .val { font-family: var(--mono); font-size: 1.15rem; font-weight: 600; }
-  .metric .lbl { font-family: var(--mono); font-size: 0.64rem; color: var(--pencil); text-transform: lowercase; }
-  .k-switch { display: flex; gap: 6px; margin-top: 12px; }
-  .k-switch button { all: unset; cursor: pointer; font-family: var(--mono); font-size: 0.7rem; padding: 4px 9px; border: 1px solid var(--line); color: var(--pencil); }
-  .k-switch button.active { background: var(--moss); border-color: var(--moss); color: white; }
+  .model-tabs button.active {
+    background: var(--ink);
+    color: var(--card);
+    border-color: var(--ink);
+  }
 
-  /* --------------------------------------------------------- catalog -- */
-  .catalog-mode { display: none; flex: 1; min-height: 0; }
-  .catalog-mode.active { display: flex; flex-direction: column; min-height: 0; }
-  .catalog-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; min-height: 0; min-width: 0; }
-  .catalog-col { display: flex; flex-direction: column; gap: 10px; min-height: 0; min-width: 0; }
+  .catalog-mode {
+    display: none;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .catalog-mode.active {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .catalog-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+  }
+
+  .catalog-col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+    min-width: 0;
+  }
+
+  .search-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .search-row input,
+  .genre-select {
+    padding: 9px 11px;
+    border: 1px solid var(--line);
+    background: var(--card-raised);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--ink);
+  }
+
   .search-row input {
-    width: 100%; padding: 9px 11px; border: 1px solid var(--line); background: var(--card-raised);
-    font-family: var(--mono); font-size: 0.85rem; color: var(--ink);
+    width: 100%;
+    flex: 1;
   }
-  .search-row input:focus { border-color: var(--signal); }
-  .scroll-list { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; border: 1px solid var(--line); background: var(--card-raised); }
 
-  /* book card: cover + spine-fallback + content ------------------------ */
-  .book-card { display: flex; gap: 11px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
-  .book-card:last-child { border-bottom: none; }
-  .book-cover { position: relative; flex: 0 0 40px; width: 40px; height: 60px; border: 1px solid var(--line); box-shadow: 1px 1px 0 rgba(35,36,31,0.08); }
-  .book-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  .book-spine { position: absolute; inset: 0; background: var(--ink); color: var(--card); font-family: var(--serif); font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
-  .book-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; justify-content: center; }
-  .book-title { font-family: var(--serif); font-size: 0.9rem; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .book-meta { font-size: 0.7rem; color: var(--pencil); }
-  .book-signal-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .stars { font-size: 0.72rem; color: var(--signal); letter-spacing: 1px; }
-  .rating-num { font-family: var(--mono); font-size: 0.68rem; color: var(--pencil); }
-  .rating-bar { display: flex; width: 64px; height: 4px; overflow: hidden; border-radius: 2px; background: var(--line); }
-  .rating-bar span { display: block; height: 100%; }
-  .book-tags { display: flex; gap: 4px; flex-wrap: wrap; }
-  .book-tag { font-family: var(--mono); font-size: 0.62rem; color: var(--moss); border: 1px solid var(--moss-dim); background: var(--moss-dim); padding: 1px 6px; }
-  .book-actions { flex: 0 0 auto; display: flex; align-items: center; }
-  .book-actions button { all: unset; cursor: pointer; font-family: var(--mono); font-size: 0.66rem; border: 1px solid var(--moss); color: var(--moss); padding: 5px 9px; white-space: nowrap; }
-  .book-actions button:hover { background: var(--moss); color: white; }
-  .book-actions .score-badge { font-family: var(--mono); font-size: 0.7rem; color: var(--signal); font-weight: 600; }
+  .search-row input:focus,
+  .genre-select:focus {
+    border-color: var(--signal);
+    outline: none;
+  }
 
-  .reader-btn { all: unset; cursor: pointer; font-family: var(--mono); font-size: 0.78rem; background: var(--ink); color: var(--card); padding: 8px 14px; text-align: center; }
-  .reader-btn:hover { background: #000; }
-  .shelf-list, .rec-list { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; border: 1px solid var(--line); background: var(--card-raised); }
-  .shelf-list.padded, .rec-list.padded { padding: 10px 12px; }
-  .shelf-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 0.82rem; gap: 8px; }
-  .shelf-item:last-child { border-bottom: none; }
-  .section-label { font-family: var(--mono); font-size: 0.68rem; color: var(--pencil); overflow-wrap: break-word; }
+  .scroll-list {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid var(--line);
+    background: var(--card-raised);
+  }
 
-  .empty, .loading { color: var(--pencil); font-family: var(--mono); font-size: 0.8rem; padding: 14px 12px; }
+  /* ------------------------------------------------------ book cards --- */
 
-  /* --------------------------------------------------- architecture -- */
-  .phase-scroll { flex: 1; overflow-y: auto; }
-  .phase-row { display: grid; grid-template-columns: 90px 1fr; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 0.85rem; }
-  .phase-row .tag { font-family: var(--mono); font-size: 0.72rem; color: var(--moss); font-weight: 600; }
-  .phase-row .file { font-family: var(--mono); font-size: 0.72rem; color: var(--pencil); margin-top: 3px; }
+  .book-card {
+    display: flex;
+    gap: 11px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+  }
 
-  /* --------------------------------------------------------- prose --- */
-  .prose-scroll { flex: 1; overflow-y: auto; padding-right: 8px; }
-  .prose { line-height: 1.65; font-size: 0.88rem; max-width: 72ch; }
-  .prose h1, .prose h2, .prose h3 { font-family: var(--serif); font-size: 1.05rem; margin: 20px 0 8px; }
-  .prose blockquote { border-left: 3px solid var(--signal); margin: 12px 0; padding: 3px 14px; color: var(--pencil); font-style: italic; }
-  .prose ul { padding-left: 20px; }
-  .prose li { margin-bottom: 6px; }
+  .book-card:last-child {
+    border-bottom: none;
+  }
 
-  /* ----------------------------------------------------- responsive -- */
+  .book-cover {
+    position: relative;
+    flex: 0 0 40px;
+    width: 40px;
+    height: 63px;
+    border: 1px solid var(--line);
+    box-shadow: 1px 1px 0 rgba(35,36,31,0.08);
+    overflow: hidden;
+  }
+
+  .book-cover img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    image-rendering: auto;
+    z-index: 2;
+  }
+
+  .book-spine {
+    position: absolute;
+    inset: 0;
+    background: var(--ink);
+    color: var(--card);
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+  }
+
+  /* Save action: blur the cover behind the icon so a white glyph is legible
+     regardless of the cover art's own colors (a flat color tint alone still
+     let strongly-colored covers show through and wash out the icon). */
+  .cover-shelf-action {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(23, 23, 18, 0.30);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    opacity: 0;
+    transition: opacity 0.16s ease;
+    z-index: 4;
+    pointer-events: none;
+  }
+
+  .book-cover:hover .cover-shelf-action,
+  .shelf-book-cover:hover .cover-shelf-action {
+    opacity: 1;
+  }
+
+  /* A subtle glass tint on top of the blur. */
+  .cover-shelf-action::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(247, 243, 232, 0.08);
+    pointer-events: none;
+  }
+
+  .cover-shelf-action button {
+    all: unset;
+    cursor: pointer;
+    width: 31px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    transition:
+      transform 0.15s ease,
+      color 0.15s ease;
+    position: relative;
+    z-index: 2;
+    pointer-events: auto;
+  }
+
+  .cover-shelf-action button:hover {
+    transform: translateY(-1px) scale(1.05);
+    background: transparent;
+    color: #FFFFFF;
+    border-color: transparent;
+  }
+
+  /* Saved ("tap to unsave") state: hollow outline rather than filled.
+     A filled glyph in the accent color camouflaged against orange/red
+     covers; white stays legible on every cover thanks to the blur+tint
+     behind it, and filled-vs-hollow reads clearly as saved-vs-not. */
+  .cover-shelf-action button.saved {
+    opacity: 1;
+    background: transparent;
+    color: #FFFFFF;
+    border-color: transparent;
+  }
+
+  .cover-shelf-action button.saved:hover {
+    background: transparent;
+    color: #FFFFFF;
+  }
+
+  .bookmark-icon {
+    width: 19px;
+    height: 24px;
+    display: block;
+    /* Dark drop-shadow so the white glyph reads clearly against light or
+       busy cover art, not just dark covers. */
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.65)) drop-shadow(0 0 1px rgba(0,0,0,0.5));
+  }
+
+  .bookmark-icon path {
+    /* Default (not yet saved): solid-filled so it's visible on every
+       cover regardless of background color -- an outline-only glyph
+       disappeared against light or busy artwork. */
+    fill: currentColor;
+    stroke: rgba(0,0,0,0.35);
+    stroke-width: 1;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  /* Saved state overrides to hollow. */
+  .cover-shelf-action button.saved .bookmark-icon path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.4;
+  }
+
+  .book-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    justify-content: center;
+  }
+
+  .book-title {
+    font-family: var(--serif);
+    font-size: 0.9rem;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .book-meta {
+    font-size: 0.7rem;
+    color: var(--pencil);
+  }
+
+  .book-signal-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .stars {
+    font-size: 0.72rem;
+    color: var(--signal);
+    letter-spacing: 1px;
+  }
+
+  .rating-num {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--pencil);
+  }
+
+  .rating-bar {
+    display: flex;
+    width: 64px;
+    height: 4px;
+    overflow: hidden;
+    border-radius: 2px;
+    background: var(--line);
+  }
+
+  .rating-bar span {
+    display: block;
+    height: 100%;
+  }
+
+  .book-tags {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .book-tag {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--moss);
+    border: 1px solid var(--moss-dim);
+    background: var(--moss-dim);
+    padding: 1px 6px;
+  }
+
+  .book-actions {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+  }
+
+  .book-actions button {
+    all: unset;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    border: 1px solid var(--moss);
+    color: var(--moss);
+    padding: 5px 9px;
+    white-space: nowrap;
+  }
+
+  .book-actions button:hover {
+    background: var(--moss);
+    color: white;
+  }
+
+  .book-actions .score-badge {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--signal);
+    font-weight: 600;
+  }
+
+  .reader-btn {
+    all: unset;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    background: var(--ink);
+    color: var(--card);
+    padding: 8px 14px;
+    text-align: center;
+  }
+
+  .reader-btn:hover {
+    background: #000;
+  }
+
+  .shelf-list,
+  .rec-list {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid var(--line);
+    background: var(--card-raised);
+  }
+
+  .shelf-list.padded,
+  .rec-list.padded {
+    padding: 10px 12px;
+  }
+
+  .shelf-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--line);
+    font-size: 0.82rem;
+    gap: 8px;
+  }
+
+  .shelf-item:last-child {
+    border-bottom: none;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--pencil);
+    overflow-wrap: break-word;
+  }
+
+  .empty,
+  .loading {
+    color: var(--pencil);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    padding: 14px 12px;
+  }
+
+  /* ------------------------------------------------------- your shelf --- */
+
+  .shelf-page {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .shelf-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 0 14px;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+
+  .shelf-heading h3 {
+    font-size: 1.1rem;
+    margin-bottom: 4px;
+  }
+
+  .shelf-subtitle {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--pencil);
+  }
+
+  .your-shelf-grid {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 18px;
+    align-content: start;
+    padding: 18px 4px 18px 0;
+  }
+
+  .shelf-book {
+    min-width: 0;
+  }
+
+  .shelf-book-cover {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    border: 1px solid var(--line);
+    background: var(--ink);
+    overflow: hidden;
+    box-shadow: 1px 1px 0 rgba(35,36,31,0.08);
+  }
+
+  .shelf-book-cover img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    image-rendering: auto;
+    z-index: 2;
+  }
+
+  .shelf-book-spine {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ink);
+    color: var(--card);
+    font-family: var(--serif);
+    font-size: 2rem;
+    z-index: 1;
+  }
+
+  .shelf-book-info {
+    padding-top: 8px;
+  }
+
+  .shelf-book-title {
+    font-family: var(--serif);
+    font-size: 0.86rem;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+  }
+
+  .shelf-book-meta {
+    font-size: 0.66rem;
+    color: var(--pencil);
+    margin-top: 3px;
+    line-height: 1.4;
+  }
+
+  .shelf-book-rating {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-top: 4px;
+  }
+
+  .shelf-empty {
+    grid-column: 1 / -1;
+    align-self: center;
+    justify-self: center;
+    text-align: center;
+    max-width: 380px;
+    line-height: 1.6;
+  }
+
+  .shelf-empty strong {
+    color: var(--ink);
+  }
+
+  /* ----------------------------------------------------- responsive --- */
+
   @media (max-width: 860px) {
-    body { overflow: auto; }
-    .shell { grid-template-columns: 1fr; height: auto; }
-    nav { flex-direction: row; overflow-x: auto; padding: 10px; }
-    .brand { display: none; }
-    .drawer-tabs { flex-direction: row; }
-    main { height: auto; }
-    .content, .content.active { display: flex; }
-    .content { overflow: visible; }
-    .lb-grid, .catalog-grid { grid-template-columns: 1fr; }
+    body {
+      overflow: auto;
+    }
+
+    .shell {
+      grid-template-columns: 1fr;
+      height: auto;
+    }
+
+    nav {
+      flex-direction: row;
+      overflow-x: auto;
+      padding: 10px;
+    }
+
+    .brand {
+      display: none;
+    }
+
+    .drawer-tabs {
+      flex-direction: row;
+    }
+
+    main {
+      height: auto;
+      min-height: calc(100vh - 56px);
+    }
+
+    .content,
+    .content.active {
+      display: flex;
+    }
+
+    .content {
+      overflow: visible;
+    }
+
+    .catalog-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .your-shelf-grid {
+      grid-template-columns: repeat(
+        auto-fill,
+        minmax(115px, 1fr)
+      );
+    }
   }
+
   @media (prefers-reduced-motion: reduce) {
-    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+    * {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+    }
   }
 </style>
 </head>
+
 <body>
 <div class="shell">
+
   <nav>
     <div class="brand">
       <h1>The Drawer</h1>
       <div class="sub">book recommender — 9 systems, one catalog</div>
     </div>
+
     <div class="drawer-tabs">
-      <button data-tab="leaderboard" class="active"><span class="num">01</span> Leaderboard</button>
-      <button data-tab="compare"><span class="num">02</span> Model detail</button>
-      <button data-tab="catalog"><span class="num">03</span> Catalog &amp; recommend</button>
-      <button data-tab="architecture"><span class="num">04</span> Architecture</button>
-      <button data-tab="limitations"><span class="num">05</span> Limitations</button>
+      <button data-tab="catalog" class="active">
+        <span class="num">01</span>
+        Catalog &amp; Recommend
+      </button>
+
+      <button data-tab="shelf">
+        <span class="num">02</span>
+        Your Shelf
+      </button>
     </div>
-    <div class="rail-footer">Trained on goodbooks-10k, 5.9M ratings.<br><a href="https://github.com/Mehak3010/RecommendationSystem" target="_blank">View source →</a></div>
+
+    <div class="rail-footer">
+      Trained on goodbooks-10k, 5.9M ratings.<br>
+      <a
+        href="https://github.com/Mehak3010/RecommendationSystem"
+        target="_blank"
+        rel="noopener noreferrer"
+      >View source →</a>
+    </div>
   </nav>
 
   <main>
+
     <div class="topbar">
-      <h2 id="page-title">Model Leaderboard</h2>
+      <h2 id="page-title">Catalog &amp; Recommend</h2>
       <div class="stat-chips" id="stat-strip"></div>
     </div>
 
-    <!-- LEADERBOARD -->
-    <section id="leaderboard" class="content active">
-      <div class="lb-grid">
-        <div class="lb-left">
-          <div class="stamp-card chart-card">
-            <h3>Ranked by NDCG@10 — 5,000 held-out readers</h3>
-            <div id="bar-chart-wrap" style="flex:1; min-height:0; position:relative;"></div>
-          </div>
-          <div class="stamp-card" style="flex-shrink:0;">
-            <h3>Full results</h3>
-            <div class="table-wrap"><div id="leaderboard-table" class="loading">Loading models/leaderboard.csv…</div></div>
-          </div>
-        </div>
-        <div class="lb-left">
-          <div class="stamp-card top-pick" id="top-pick-card">
-            <div class="call-no">TOP PICK</div>
-            <div class="loading">Loading…</div>
-          </div>
-          <div class="stamp-card chart-card">
-            <h3>Accuracy vs. catalog coverage</h3>
-            <div id="scatter-wrap" style="flex:1; min-height:0; position:relative;"></div>
-          </div>
-        </div>
-      </div>
-    </section>
+    <!-- ================================================= CATALOG ===== -->
 
-    <!-- MODEL DETAIL -->
-    <section id="compare" class="content">
-      <div class="stamp-card" style="flex-shrink:0;">
-        <h3>Pick a system</h3>
-        <div id="model-picker" class="model-tabs"></div>
-      </div>
-      <div class="stamp-card" style="flex:1; overflow-y:auto;" id="model-detail">
-        <div class="empty">Pick a model above.</div>
-      </div>
-    </section>
+    <section id="catalog" class="content active">
 
-    <!-- CATALOG -->
-    <section id="catalog" class="content">
-      <div class="model-tabs" id="catalog-mode-tabs" style="flex-shrink:0;">
-        <button data-mode="similar" class="active">Find similar titles</button>
-        <button data-mode="personalized">Personalized picks</button>
+      <div
+        class="model-tabs"
+        id="catalog-mode-tabs"
+        style="flex-shrink:0;"
+      >
+        <button data-mode="similar" class="active">
+          Find similar titles
+        </button>
+
+        <button data-mode="personalized">
+          Personalized picks
+        </button>
       </div>
+
+      <!-- ------------------------------------------ FIND SIMILAR ------- -->
 
       <div id="mode-similar" class="catalog-mode active">
+
         <div class="catalog-grid">
+
           <div class="catalog-col">
-            <div class="section-label">FIND SIMILAR TITLES — TF-IDF text similarity, computed live</div>
-            <div class="search-row" style="display:flex; gap:8px;">
-              <select id="genre-select" style="flex:0 0 150px; padding:9px 8px; border:1px solid var(--line); background:var(--card-raised); font-family:var(--mono); font-size:0.78rem; color:var(--ink);">
+
+            <div class="section-label">
+              FIND SIMILAR TITLES — TF-IDF text similarity, computed live
+            </div>
+
+            <div class="search-row">
+
+              <select
+                id="genre-select"
+                class="genre-select"
+                style="flex:0 0 150px;"
+              >
                 <option value="">All genres</option>
               </select>
-              <input id="book-search" type="text" placeholder="Search title or author…" style="flex:1;">
+
+              <input
+                id="book-search"
+                type="text"
+                placeholder="Search title or author…"
+              >
+
             </div>
-            <div id="book-count" class="section-label" style="color:var(--pencil);"></div>
-            <div id="book-list" class="scroll-list loading">Loading catalog…</div>
+
+            <div
+              id="book-count"
+              class="section-label"
+            ></div>
+
+            <div
+              id="book-list"
+              class="scroll-list loading"
+            >
+              Loading catalog…
+            </div>
+
           </div>
+
           <div class="catalog-col">
-            <div class="section-label" id="rec-panel-label">SIMILAR TITLES</div>
-            <div id="rec-panel" class="rec-list">
-              <div class="empty">Pick a book on the left to see similar titles.</div>
+
+            <div
+              class="section-label"
+              id="rec-panel-label"
+            >
+              SIMILAR TITLES
             </div>
+
+            <div id="rec-panel" class="rec-list">
+
+              <div class="empty">
+                Pick a book on the left to see similar titles.
+              </div>
+
+            </div>
+
           </div>
+
         </div>
+
       </div>
+
+      <!-- --------------------------------------- PERSONALIZED -------- -->
 
       <div id="mode-personalized" class="catalog-mode">
+
         <div class="catalog-grid">
+
           <div class="catalog-col">
-            <div class="section-label">PERSONALIZED PICKS — real ALS model, trained on 5.9M ratings</div>
+
+            <div class="section-label">
+              PERSONALIZED PICKS — real ALS model, trained on 5.9M ratings
+            </div>
+
             <div style="display:flex; gap:8px;">
-              <select id="reader-genre-select" style="flex:0 0 150px; padding:9px 8px; border:1px solid var(--line); background:var(--card-raised); font-family:var(--mono); font-size:0.78rem; color:var(--ink);">
+
+              <select
+                id="reader-genre-select"
+                class="genre-select"
+                style="flex:0 0 150px;"
+              >
                 <option value="">All genres</option>
               </select>
-              <button class="reader-btn" id="random-reader-btn" style="flex:1;">Pull a random reader's card →</button>
+
+              <button
+                class="reader-btn"
+                id="random-reader-btn"
+                style="flex:1;"
+              >
+                Pull a random reader's card →
+              </button>
+
             </div>
-            <div id="reader-shelf" class="shelf-list padded">
-              <div class="empty">No reader pulled yet.</div>
+
+            <div
+              id="reader-shelf"
+              class="shelf-list padded"
+            >
+              <div class="empty">
+                No reader pulled yet.
+              </div>
+            </div>
+
+          </div>
+
+          <div class="catalog-col">
+
+            <div
+              class="section-label"
+              id="reader-recs-label"
+            >
+              RECOMMENDATIONS
+            </div>
+
+            <div id="reader-recs" class="rec-list">
+
+              <div class="empty">
+                Recommendations will appear here.
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- ================================================== SHELF ===== -->
+
+    <section id="shelf" class="content">
+
+      <div class="shelf-page">
+
+        <div class="shelf-heading">
+
+          <div>
+            <h3>Your Shelf</h3>
+            <div class="shelf-subtitle">
+              BOOKS YOU WANT TO COME BACK TO
             </div>
           </div>
-          <div class="catalog-col">
-            <div class="section-label" id="reader-recs-label">RECOMMENDATIONS</div>
-            <div id="reader-recs" class="rec-list">
-              <div class="empty">Recommendations will appear here.</div>
-            </div>
+
+          <div
+            id="shelf-count"
+            class="section-label"
+          >
+            0 books
+          </div>
+
+        </div>
+
+        <div
+          id="your-shelf-list"
+          class="your-shelf-grid"
+        >
+          <div class="empty shelf-empty">
+            Your shelf is empty.<br><br>
+            Hover over any book cover and choose
+            <strong>the bookmark icon</strong> to save it.
           </div>
         </div>
+
       </div>
+
     </section>
 
-    <!-- ARCHITECTURE -->
-    <section id="architecture" class="content">
-      <div class="stamp-card" style="flex:1; display:flex; flex-direction:column; min-height:0;">
-        <h3>Nine models, one shared evaluation harness</h3>
-        <div id="phase-list" class="phase-scroll loading">Loading…</div>
-      </div>
-    </section>
-
-    <!-- LIMITATIONS -->
-    <section id="limitations" class="content">
-      <div class="stamp-card" style="flex:1; display:flex; flex-direction:column; min-height:0;">
-        <div id="limitations-content" class="prose-scroll prose loading">Loading…</div>
-      </div>
-    </section>
   </main>
 </div>
 
 <script>
 const API = "";
-const fmt = (v, d=4) => (v === null || v === undefined || Number.isNaN(v)) ? "—" : Number(v).toFixed(d);
-const MONEY = new Set(["sasrec_lite", "semantic_id_generative"]);
-const DISPLAY_ORDER_COLOR = (model) => MONEY.has(model) ? "#C1442D" : "#4B5D45";
 
-// ---- tab switching ----
-const TITLES = { leaderboard: "Model Leaderboard", compare: "Model Detail", catalog: "Catalog & Recommend", architecture: "Architecture", limitations: "Honest Limitations" };
-document.querySelectorAll(".drawer-tabs button").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll(".drawer-tabs button").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll("main section").forEach(s => s.classList.remove("active"));
-    btn.classList.add("active");
-    document.getElementById(btn.dataset.tab).classList.add("active");
-    document.getElementById("page-title").textContent = TITLES[btn.dataset.tab];
+/* ================================================== utilities ===== */
+
+const fmt = (v, d = 4) =>
+  (v === null ||
+   v === undefined ||
+   Number.isNaN(v))
+    ? "—"
+    : Number(v).toFixed(d);
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/* ================================================== tab switching ===== */
+
+const TITLES = {
+  catalog: "Catalog & Recommend",
+  shelf: "Your Shelf"
+};
+
+document
+  .querySelectorAll(".drawer-tabs button")
+  .forEach(btn => {
+
+    btn.addEventListener("click", () => {
+
+      document
+        .querySelectorAll(".drawer-tabs button")
+        .forEach(b => b.classList.remove("active"));
+
+      document
+        .querySelectorAll("main section")
+        .forEach(s => s.classList.remove("active"));
+
+      btn.classList.add("active");
+
+      document
+        .getElementById(btn.dataset.tab)
+        .classList.add("active");
+
+      document.getElementById("page-title").textContent =
+        TITLES[btn.dataset.tab];
+
+      if (btn.dataset.tab === "shelf") {
+        renderShelf();
+      }
+
+    });
+
   });
-});
 
-// ---- catalog sub-tabs: find-similar vs personalized ----
-document.querySelectorAll("#catalog-mode-tabs button").forEach(btn => {
-  btn.addEventListener("click", () => {
-    document.querySelectorAll("#catalog-mode-tabs button").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".catalog-mode").forEach(m => m.classList.remove("active"));
-    btn.classList.add("active");
-    document.getElementById(`mode-${btn.dataset.mode}`).classList.add("active");
+/* ============================================== catalog sub-tabs ===== */
+
+document
+  .querySelectorAll("#catalog-mode-tabs button")
+  .forEach(btn => {
+
+    btn.addEventListener("click", () => {
+
+      document
+        .querySelectorAll("#catalog-mode-tabs button")
+        .forEach(b => b.classList.remove("active"));
+
+      document
+        .querySelectorAll(".catalog-mode")
+        .forEach(m => m.classList.remove("active"));
+
+      btn.classList.add("active");
+
+      document
+        .getElementById(`mode-${btn.dataset.mode}`)
+        .classList.add("active");
+
+    });
+
   });
-});
 
-// ---- stats strip ----
+/* ================================================= stats strip ===== */
+
 async function loadStats() {
-  const r = await fetch(`${API}/api/stats`);
-  const s = await r.json();
-  document.getElementById("stat-strip").innerHTML = `
-    <div class="chip"><div class="v">${s.n_users.toLocaleString()}</div><div class="l">readers</div></div>
-    <div class="chip"><div class="v">${s.n_items.toLocaleString()}</div><div class="l">titles</div></div>
-    <div class="chip"><div class="v">${s.n_models}</div><div class="l">systems</div></div>
-  `;
-}
 
-// ---- SVG bar chart (leaderboard) ----
-function renderBarChart(rows) {
-  const wrap = document.getElementById("bar-chart-wrap");
-  const w = 560, rowH = 30, padL = 150, padR = 55, padTop = 6;
-  const h = rows.length * rowH + padTop;
-  const maxVal = Math.max(...rows.map(r => r["ndcg@10"])) * 1.08;
-
-  let svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMinYMin meet" style="width:100%; height:100%;">`;
-  rows.forEach((r, idx) => {
-    const y = padTop + idx * rowH;
-    const barW = (r["ndcg@10"] / maxVal) * (w - padL - padR);
-    const color = DISPLAY_ORDER_COLOR(r.model);
-    svg += `
-      <text x="${padL - 10}" y="${y + rowH/2 + 4}" text-anchor="end" font-family="IBM Plex Mono" font-size="11" fill="#23241F">${r.display_name}</text>
-      <rect class="bar" data-idx="${idx}" x="${padL}" y="${y + 5}" width="0" height="${rowH - 12}" fill="${color}" data-target-width="${barW}">
-        <animate attributeName="width" from="0" to="${barW}" dur="0.7s" begin="${idx * 0.04}s" fill="freeze" calcMode="spline" keySplines="0.2 0 0.1 1" />
-      </rect>
-      <text x="${padL + barW + 8}" y="${y + rowH/2 + 4}" font-family="IBM Plex Mono" font-size="10.5" fill="#6B6558">${fmt(r["ndcg@10"])}</text>
-    `;
-  });
-  svg += `</svg>`;
-  wrap.innerHTML = svg;
-
-  const tooltip = document.createElement("div");
-  tooltip.className = "tooltip";
-  wrap.appendChild(tooltip);
-  wrap.querySelectorAll("rect.bar").forEach(rect => {
-    const row = rows[+rect.dataset.idx];
-    rect.addEventListener("mousemove", (e) => {
-      tooltip.innerHTML = `${row.display_name}<br>ndcg ${fmt(row["ndcg@10"])} · recall ${fmt(row["recall@10"])} · coverage ${fmt(row["coverage@10"])}`;
-      const bounds = wrap.getBoundingClientRect();
-      tooltip.style.left = (e.clientX - bounds.left + 12) + "px";
-      tooltip.style.top = (e.clientY - bounds.top - 10) + "px";
-      tooltip.classList.add("show");
-    });
-    rect.addEventListener("mouseleave", () => tooltip.classList.remove("show"));
-  });
-}
-
-// ---- SVG scatter (coverage vs accuracy) ----
-function renderScatter(rows) {
-  const wrap = document.getElementById("scatter-wrap");
-  const w = 340, h = 220, pad = 34;
-  const maxX = Math.max(...rows.map(r => r["coverage@10"])) * 1.15;
-  const maxY = Math.max(...rows.map(r => r["ndcg@10"])) * 1.15;
-  const X = v => pad + (v / maxX) * (w - pad - 14);
-  const Y = v => h - pad - (v / maxY) * (h - pad - 14);
-
-  let svg = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMinYMin meet" style="width:100%; height:100%;">`;
-  svg += `<line x1="${pad}" y1="${h-pad}" x2="${w-14}" y2="${h-pad}" stroke="#D9D0BC" />`;
-  svg += `<line x1="${pad}" y1="${h-pad}" x2="${pad}" y2="6" stroke="#D9D0BC" />`;
-  svg += `<text x="${(w+pad)/2}" y="${h-6}" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#6B6558">coverage@10</text>`;
-  svg += `<text x="10" y="12" font-family="IBM Plex Mono" font-size="9" fill="#6B6558">ndcg</text>`;
-
-  rows.forEach((r, idx) => {
-    const cx = X(r["coverage@10"]), cy = Y(r["ndcg@10"]);
-    const color = DISPLAY_ORDER_COLOR(r.model);
-    svg += `<circle class="pt" data-idx="${idx}" cx="${cx}" cy="${cy}" r="5" fill="${color}" stroke="#EFE9DA" stroke-width="1.5" opacity="0">
-      <animate attributeName="opacity" from="0" to="1" dur="0.4s" begin="${0.3 + idx*0.04}s" fill="freeze" />
-    </circle>`;
-  });
-  svg += `</svg>`;
-  wrap.innerHTML = svg;
-
-  const tooltip = document.createElement("div");
-  tooltip.className = "tooltip";
-  wrap.appendChild(tooltip);
-  wrap.querySelectorAll("circle.pt").forEach(pt => {
-    const row = rows[+pt.dataset.idx];
-    pt.addEventListener("mousemove", (e) => {
-      tooltip.innerHTML = `${row.display_name}<br>ndcg ${fmt(row["ndcg@10"])} · coverage ${fmt(row["coverage@10"])}`;
-      const bounds = wrap.getBoundingClientRect();
-      tooltip.style.left = (e.clientX - bounds.left + 12) + "px";
-      tooltip.style.top = (e.clientY - bounds.top - 10) + "px";
-      tooltip.classList.add("show");
-    });
-    pt.addEventListener("mouseleave", () => tooltip.classList.remove("show"));
-  });
-}
-
-function renderTopPick(top) {
-  document.getElementById("top-pick-card").innerHTML = `
-    <div class="call-no">TOP PICK</div>
-    <div class="big-num">${fmt(top["ndcg@10"])}</div>
-    <div class="big-lbl">ndcg@10 — ${top.display_name}</div>
-    <p>Leads by directly conditioning on what the reader just interacted with — a real edge, though it lines up closely with how the eval itself is framed (next-item prediction), so treat the margin as suggestive rather than definitive.</p>
-  `;
-}
-
-async function loadLeaderboard() {
-  const r = await fetch(`${API}/api/leaderboard`);
-  const rows = await r.json();
-  renderBarChart(rows);
-  renderScatter(rows);
-  renderTopPick(rows[0]);
-
-  const html = `
-    <table>
-      <thead><tr><th>Model</th><th class="num">NDCG@10</th><th class="num">Recall@10</th><th class="num">Coverage</th><th class="num">Diversity</th></tr></thead>
-      <tbody>
-        ${rows.map(m => `
-          <tr class="${MONEY.has(m.model) ? 'money' : ''}">
-            <td>${m.display_name}</td>
-            <td class="num">${fmt(m["ndcg@10"])}</td>
-            <td class="num">${fmt(m["recall@10"])}</td>
-            <td class="num">${fmt(m["coverage@10"])}</td>
-            <td class="num">${fmt(m["diversity@10"])}</td>
-          </tr>`).join("")}
-      </tbody>
-    </table>`;
-  document.getElementById("leaderboard-table").outerHTML = `<div id="leaderboard-table">${html}</div>`;
-  return rows;
-}
-
-// ---- model detail ----
-let currentK = "10";
-function renderModelDetail(data) {
-  const ks = ["5", "10", "20"];
-  const m = data.metrics_by_k;
-  const keys = Object.keys(m).filter(k => k.endsWith("@" + currentK));
-  document.getElementById("model-detail").innerHTML = `
-    <h3>${data.display_name} <span style="color:var(--pencil); font-weight:400; font-size:0.72rem;">— ${data.source_file}</span></h3>
-    <div class="k-switch" id="k-switch">${ks.map(k => `<button data-k="${k}" class="${k===currentK?'active':''}">k=${k}</button>`).join("")}</div>
-    <div class="metric-grid">${keys.map(k => `<div class="metric"><div class="val">${fmt(m[k], m[k] > 5 ? 2 : 4)}</div><div class="lbl">${k.split("@")[0]}</div></div>`).join("")}</div>
-  `;
-  document.querySelectorAll("#k-switch button").forEach(b => b.addEventListener("click", () => { currentK = b.dataset.k; renderModelDetail(data); }));
-}
-
-async function pickModel(modelKey, btn) {
-  document.querySelectorAll("#model-picker button").forEach(b => b.classList.remove("active"));
-  btn.classList.add("active");
-  document.getElementById("model-detail").innerHTML = `<div class="loading">Loading ${modelKey}…</div>`;
   try {
-    const r = await fetch(`${API}/api/model/${modelKey}`);
-    if (!r.ok) throw new Error("not found");
-    renderModelDetail(await r.json());
+
+    const r = await fetch(`${API}/api/stats`);
+
+    if (!r.ok) throw new Error("Stats unavailable");
+
+    const s = await r.json();
+
+    document.getElementById("stat-strip").innerHTML = `
+      <div class="chip">
+        <div class="v">${s.n_users.toLocaleString()}</div>
+        <div class="l">readers</div>
+      </div>
+
+      <div class="chip">
+        <div class="v">${s.n_items.toLocaleString()}</div>
+        <div class="l">titles</div>
+      </div>
+
+      <div class="chip">
+        <div class="v">${s.n_models}</div>
+        <div class="l">systems</div>
+      </div>
+    `;
+
   } catch (e) {
-    document.getElementById("model-detail").innerHTML = `<div class="empty">No detailed results file for this model.</div>`;
+
+    document.getElementById("stat-strip").innerHTML = "";
+
   }
+
 }
 
-async function loadModelPicker(rows) {
-  const el = document.getElementById("model-picker");
-  el.innerHTML = rows.map((m, i) => `<button data-model="${m.model}" class="${i===0?'active':''}">${m.display_name}</button>`).join("");
-  el.querySelectorAll("button").forEach(b => b.addEventListener("click", () => pickModel(b.dataset.model, b)));
-  if (rows.length) pickModel(rows[0].model, el.querySelector("button"));
+/* ==================================================== shelf ===== */
+
+const SHELF_KEY = "the-drawer-shelf";
+
+function getShelf() {
+
+  try {
+
+    const saved =
+      JSON.parse(
+        localStorage.getItem(SHELF_KEY) || "[]"
+      );
+
+    return Array.isArray(saved) ? saved : [];
+
+  } catch (e) {
+
+    return [];
+
+  }
+
 }
 
-// ---- catalog: shared book card renderer (cover art + stars + rating bar) ----
-const STAR_COLORS = ["#D9D0BC", "#D9D0BC", "#D9D0BC", "#D9D0BC", "#D9D0BC"]; // unused placeholder, real colors below
-function starString(avg) {
-  if (avg === null || avg === undefined) return "";
-  const full = Math.round(avg);
-  return "★".repeat(full) + "☆".repeat(5 - full);
-}
-function ratingBarHtml(pct) {
-  if (!pct) return "";
-  const colors = ["#C1442D", "#D97757", "#B8A968", "#8CA37E", "#4B5D45"]; // 1-star..5-star, warm-to-moss
-  return `<div class="rating-bar" title="${pct.map((p,i)=>`${i+1}★ ${p}%`).join(' · ')}">${pct.map((p,i)=>`<span style="width:${p}%; background:${colors[i]}"></span>`).join("")}</div>`;
-}
-function fmtCount(n) {
-  if (n === null || n === undefined) return "";
-  if (n >= 1000000) return (n/1000000).toFixed(1) + "M ratings";
-  if (n >= 1000) return Math.round(n/1000) + "k ratings";
-  return n + " ratings";
-}
-function bookCoverHtml(b) {
-  const initial = (b.title || "?").trim()[0].toUpperCase();
-  return `
-    <div class="book-cover">
-      <div class="book-spine">${initial}</div>
-      ${b.cover_url ? `<img src="${b.cover_url}" alt="" loading="lazy" onerror="this.style.display='none'">` : ""}
-    </div>`;
-}
-function bookCardHtml(b, { action = "", tags = false } = {}) {
-  const tagList = tags && b.tags_text ? b.tags_text.split(" ").slice(0, 3) : [];
-  return `
-    <div class="book-card">
-      ${bookCoverHtml(b)}
-      <div class="book-body">
-        <div class="book-title" title="${b.title}">${b.title}</div>
-        <div class="book-meta">${b.authors}${b.year ? " · " + b.year : ""}</div>
-        <div class="book-signal-row">
-          ${b.average_rating !== null ? `<span class="stars">${starString(b.average_rating)}</span><span class="rating-num">${b.average_rating.toFixed(2)}</span>` : ""}
-          ${ratingBarHtml(b.rating_dist_pct)}
-          ${b.rating_count ? `<span class="rating-num">${fmtCount(b.rating_count)}</span>` : ""}
-        </div>
-        ${tagList.length ? `<div class="book-tags">${tagList.map(t => `<span class="book-tag">${t}</span>`).join("")}</div>` : ""}
-      </div>
-      <div class="book-actions">
-        ${action === "similar" ? `<button data-i="${b.i}" class="similar-btn">Similar →</button>` : ""}
-        ${action === "score" ? `<span class="score-badge">${b.score}</span>` : ""}
-        ${action === "similarity" ? `<span class="score-badge">${b.similarity}</span>` : ""}
-      </div>
-    </div>`;
+function saveShelf(shelf) {
+  localStorage.setItem(
+    SHELF_KEY,
+    JSON.stringify(shelf)
+  );
 }
 
-// ---- catalog: genre picker ----
-async function loadGenres() {
-  const r = await fetch(`${API}/api/genres`);
-  const data = await r.json();
-  const sorted = [...data].sort((a, b) => b.count - a.count);
-  const populate = (sel) => sorted.forEach(g => {
-    const opt = document.createElement("option");
-    opt.value = g.key;
-    opt.textContent = `${g.label} (${g.count})`;
-    sel.appendChild(opt);
-  });
-  const catalogSel = document.getElementById("genre-select");
-  const readerSel = document.getElementById("reader-genre-select");
-  populate(catalogSel);
-  populate(readerSel);
-  catalogSel.addEventListener("change", () => loadBooks(document.getElementById("book-search").value));
-  readerSel.addEventListener("change", () => {
-    const currentUserId = document.getElementById("reader-shelf").dataset.userId;
-    if (currentUserId) getPersonalized(currentUserId);
-  });
+function isOnShelf(bookId) {
+
+  return getShelf().some(
+    book => String(book.i) === String(bookId)
+  );
+
 }
 
-// ---- catalog: similar titles ----
-let searchTimer = null;
-async function loadBooks(query="") {
-  const genre = document.getElementById("genre-select").value;
-  const list = document.getElementById("book-list");
-  const countEl = document.getElementById("book-count");
-  list.innerHTML = `<div class="loading">Searching…</div>`;
-  const params = new URLSearchParams({ search: query, limit: 25 });
-  if (genre) params.set("genre", genre);
-  const r = await fetch(`${API}/api/books?${params.toString()}`);
-  const data = await r.json();
+function handleShelfClick(button) {
 
-  countEl.textContent = query || genre
-    ? `${data.total} of ${data.total_catalog.toLocaleString()} titles match`
-    : `showing 25 of ${data.total_catalog.toLocaleString()} titles`;
+  try {
 
-  if (data.results.length === 0) {
-    list.innerHTML = `<div class="empty">No titles match${query ? ` "${query}"` : ""}${genre ? " in this genre" : ""}.<br><br>` +
-      `This catalog is the goodbooks-10k dataset — 10,000 well-known, mostly English-language titles. ` +
-      `A specific book you're thinking of may simply not be in that list, even if it exists.</div>`;
+    const book =
+      JSON.parse(
+        button.dataset.book
+      );
+
+    toggleShelfBook(book);
+
+  } catch (e) {
+
+    console.error("Could not read shelf book:", e);
+
+  }
+
+}
+
+function toggleShelfBook(book) {
+
+  let shelf = getShelf();
+
+  const index =
+    shelf.findIndex(
+      b => String(b.i) === String(book.i)
+    );
+
+  if (index >= 0) {
+
+    shelf.splice(index, 1);
+
+  } else {
+
+    shelf.push(book);
+
+  }
+
+  saveShelf(shelf);
+
+  updateShelfButtons(book.i);
+
+  renderShelf();
+
+}
+
+function updateShelfButtons(bookId) {
+
+  const saved = isOnShelf(bookId);
+
+  document
+    .querySelectorAll(
+      `[data-shelf-id="${CSS.escape(String(bookId))}"]`
+    )
+    .forEach(button => {
+
+      button.innerHTML = `
+        <svg class="bookmark-icon" viewBox="0 0 24 30" aria-hidden="true">
+          <path d="M3.5 2.5h17v25L12 20.8 3.5 27.5z"></path>
+        </svg>
+      `;
+
+      button.classList.toggle(
+        "saved",
+        saved
+      );
+
+      button.title =
+        saved
+          ? "Remove from your shelf"
+          : "Add to your shelf";
+
+    });
+
+}
+
+/*
+ * Progressive cover-image fallback.
+ *
+ * Each book can carry several candidate cover URLs, biggest/best first
+ * (see dashboard.py: Open Library large -> Goodreads medium -> Goodreads
+ * small). Not every candidate is guaranteed to actually load -- Open
+ * Library doesn't have every ISBN indexed -- so this tries each one in
+ * turn and only falls back to the plain letter-spine placeholder once
+ * every candidate has failed.
+ */
+function coverCandidates(book) {
+  if (Array.isArray(book.cover_urls) && book.cover_urls.length) {
+    return book.cover_urls;
+  }
+  // backward-compat: older saved shelf entries (from before this fix)
+  // only have a single cover_url string.
+  return book.cover_url ? [book.cover_url] : [];
+}
+
+function handleCoverError(img) {
+  let remaining = [];
+  try {
+    remaining = JSON.parse(img.dataset.remaining || "[]");
+  } catch (e) {
+    remaining = [];
+  }
+  if (remaining.length === 0) {
+    img.style.display = "none";
     return;
   }
-  list.innerHTML = data.results.map(b => bookCardHtml(b, { action: "similar", tags: true })).join("");
-  list.querySelectorAll(".similar-btn").forEach(btn => btn.addEventListener("click", () => getSimilar(btn.dataset.i)));
+  const next = remaining.shift();
+  img.dataset.remaining = JSON.stringify(remaining);
+  img.src = next;
+}
+
+function coverImgHtml(book) {
+  const candidates = coverCandidates(book);
+  if (candidates.length === 0) return "";
+  const [first, ...rest] = candidates;
+  return `
+    <img
+      src="${escapeHtml(first)}"
+      data-remaining='${escapeHtml(JSON.stringify(rest))}'
+      alt=""
+      loading="lazy"
+      onerror="handleCoverError(this)"
+    >
+  `;
+}
+
+function shelfCoverHtml(book) {
+
+  const initial =
+    (book.title || "?")
+      .trim()[0]
+      .toUpperCase();
+
+  const saved = isOnShelf(book.i);
+
+  const bookJson =
+    JSON.stringify(book)
+      .replace(/&/g, "&amp;")
+      .replace(/'/g, "&#039;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+  return `
+    <div class="book-cover">
+
+      <div class="book-spine">
+        ${escapeHtml(initial)}
+      </div>
+
+      ${coverImgHtml(book)}
+
+      <div class="cover-shelf-action">
+
+        <button
+          type="button"
+          data-shelf-id="${escapeHtml(book.i)}"
+          data-book='${bookJson}'
+          class="${saved ? "saved" : ""}"
+          onclick="event.stopPropagation(); handleShelfClick(this)"
+          title="${saved ? "Remove from your shelf" : "Add to your shelf"}"
+        >
+                    <svg class="bookmark-icon" viewBox="0 0 24 30" aria-hidden="true">
+            <path d="M3.5 2.5h17v25L12 20.8 3.5 27.5z"></path>
+          </svg>
+        </button>
+
+      </div>
+
+    </div>
+  `;
+
+}
+
+function renderShelf() {
+
+  const shelf =
+    getShelf();
+
+  const container =
+    document.getElementById(
+      "your-shelf-list"
+    );
+
+  const count =
+    document.getElementById(
+      "shelf-count"
+    );
+
+  count.textContent =
+    `${shelf.length} ${
+      shelf.length === 1
+        ? "book"
+        : "books"
+    }`;
+
+  if (!shelf.length) {
+
+    container.innerHTML = `
+      <div class="empty shelf-empty">
+        Your shelf is empty.<br><br>
+        Hover over any book cover and choose
+        <strong>＋ Add to shelf</strong>.
+      </div>
+    `;
+
+    return;
+
+  }
+
+  container.innerHTML =
+    shelf
+      .map(book => {
+
+        const initial =
+          (book.title || "?")
+            .trim()[0]
+            .toUpperCase();
+
+        const saved =
+          isOnShelf(book.i);
+
+        const bookJson =
+          JSON.stringify(book)
+            .replace(/&/g, "&amp;")
+            .replace(/'/g, "&#039;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+
+        return `
+          <div class="shelf-book">
+
+            <div class="shelf-book-cover">
+
+              <div class="shelf-book-spine">
+                ${escapeHtml(initial)}
+              </div>
+
+              ${coverImgHtml(book)}
+
+              <div class="cover-shelf-action">
+
+                <button
+                  type="button"
+                  data-shelf-id="${escapeHtml(book.i)}"
+                  data-book='${bookJson}'
+                  class="${saved ? "saved" : ""}"
+                  onclick="event.stopPropagation(); handleShelfClick(this)"
+                  title="Remove from your shelf"
+                >
+          <svg class="bookmark-icon" viewBox="0 0 24 30" aria-hidden="true">
+                              <path d="M3.5 2.5h17v25L12 20.8 3.5 27.5z"></path>
+                            </svg>
+                </button>
+
+              </div>
+
+            </div>
+
+            <div class="shelf-book-info">
+
+              <div
+                class="shelf-book-title"
+                title="${escapeHtml(book.title)}"
+              >
+                ${escapeHtml(book.title)}
+              </div>
+
+              <div class="shelf-book-meta">
+                ${escapeHtml(book.authors || "")}
+                ${
+                  book.year
+                    ? " · " + escapeHtml(book.year)
+                    : ""
+                }
+              </div>
+
+              ${
+                book.average_rating !== null &&
+                book.average_rating !== undefined
+                  ? `
+                    <div class="shelf-book-rating">
+                      <span class="stars">
+                        ${starString(book.average_rating)}
+                      </span>
+                      <span class="rating-num">
+                        ${Number(book.average_rating).toFixed(2)}
+                      </span>
+                    </div>
+                  `
+                  : ""
+              }
+
+            </div>
+
+          </div>
+        `;
+
+      })
+      .join("");
+
+}
+
+/* ========================================= shared book rendering ===== */
+
+function starString(avg) {
+
+  if (
+    avg === null ||
+    avg === undefined
+  ) return "";
+
+  const full =
+    Math.max(
+      0,
+      Math.min(
+        5,
+        Math.round(Number(avg))
+      )
+    );
+
+  return (
+    "★".repeat(full) +
+    "☆".repeat(5 - full)
+  );
+
+}
+
+function ratingBarHtml(pct) {
+
+  if (!pct) return "";
+
+  const colors = [
+    "#C1442D",
+    "#D97757",
+    "#B8A968",
+    "#8CA37E",
+    "#4B5D45"
+  ];
+
+  return `
+    <div
+      class="rating-bar"
+      title="${pct.map(
+        (p, i) => `${i + 1}★ ${p}%`
+      ).join(" · ")}"
+    >
+      ${
+        pct.map(
+          (p, i) => `
+            <span
+              style="
+                width:${p}%;
+                background:${colors[i]}
+              "
+            ></span>
+          `
+        ).join("")
+      }
+    </div>
+  `;
+
+}
+
+function fmtCount(n) {
+
+  if (
+    n === null ||
+    n === undefined
+  ) return "";
+
+  if (n >= 1000000)
+    return `${(n / 1000000).toFixed(1)}M ratings`;
+
+  if (n >= 1000)
+    return `${Math.round(n / 1000)}k ratings`;
+
+  return `${n} ratings`;
+
+}
+
+function bookCardHtml(
+  b,
+  { action = "", tags = false } = {}
+) {
+
+  const tagList =
+    tags && b.tags_text
+      ? b.tags_text
+          .split(" ")
+          .slice(0, 3)
+      : [];
+
+  return `
+    <div class="book-card">
+
+      ${shelfCoverHtml(b)}
+
+      <div class="book-body">
+
+        <div
+          class="book-title"
+          title="${escapeHtml(b.title)}"
+        >
+          ${escapeHtml(b.title)}
+        </div>
+
+        <div class="book-meta">
+          ${escapeHtml(b.authors || "")}
+          ${
+            b.year
+              ? " · " + escapeHtml(b.year)
+              : ""
+          }
+        </div>
+
+        <div class="book-signal-row">
+
+          ${
+            b.average_rating !== null &&
+            b.average_rating !== undefined
+              ? `
+                <span class="stars">
+                  ${starString(b.average_rating)}
+                </span>
+
+                <span class="rating-num">
+                  ${Number(b.average_rating).toFixed(2)}
+                </span>
+              `
+              : ""
+          }
+
+          ${ratingBarHtml(b.rating_dist_pct)}
+
+          ${
+            b.rating_count
+              ? `
+                <span class="rating-num">
+                  ${fmtCount(b.rating_count)}
+                </span>
+              `
+              : ""
+          }
+
+        </div>
+
+        ${
+          tagList.length
+            ? `
+              <div class="book-tags">
+                ${
+                  tagList
+                    .map(
+                      t => `
+                        <span class="book-tag">
+                          ${escapeHtml(t)}
+                        </span>
+                      `
+                    )
+                    .join("")
+                }
+              </div>
+            `
+            : ""
+        }
+
+      </div>
+
+      <div class="book-actions">
+
+        ${
+          action === "similar"
+            ? `
+              <button
+                data-i="${escapeHtml(b.i)}"
+                class="similar-btn"
+              >
+                Similar →
+              </button>
+            `
+            : ""
+        }
+
+        ${
+          action === "score"
+            ? `
+              <span class="score-badge">
+                ${escapeHtml(b.score)}
+              </span>
+            `
+            : ""
+        }
+
+        ${
+          action === "similarity"
+            ? `
+              <span class="score-badge">
+                ${escapeHtml(b.similarity)}
+              </span>
+            `
+            : ""
+        }
+
+      </div>
+
+    </div>
+  `;
+
+}
+
+/* ================================================ genre picker ===== */
+
+async function loadGenres() {
+
+  const r =
+    await fetch(`${API}/api/genres`);
+
+  if (!r.ok)
+    throw new Error("Genres unavailable");
+
+  const data =
+    await r.json();
+
+  const sorted =
+    [...data].sort(
+      (a, b) => b.count - a.count
+    );
+
+  const populate =
+    sel => {
+
+      sorted.forEach(g => {
+
+        const opt =
+          document.createElement(
+            "option"
+          );
+
+        opt.value = g.key;
+
+        opt.textContent =
+          `${g.label} (${g.count})`;
+
+        sel.appendChild(opt);
+
+      });
+
+    };
+
+  const catalogSel =
+    document.getElementById(
+      "genre-select"
+    );
+
+  const readerSel =
+    document.getElementById(
+      "reader-genre-select"
+    );
+
+  populate(catalogSel);
+  populate(readerSel);
+
+  catalogSel.addEventListener(
+    "change",
+    () =>
+      loadBooks(
+        document.getElementById(
+          "book-search"
+        ).value
+      )
+  );
+
+  readerSel.addEventListener(
+    "change",
+    () => {
+
+      const currentUserId =
+        document.getElementById(
+          "reader-shelf"
+        ).dataset.userId;
+
+      if (currentUserId)
+        getPersonalized(
+          currentUserId
+        );
+
+    }
+  );
+
+}
+
+/* ============================================== catalog search ===== */
+
+let searchTimer = null;
+
+async function loadBooks(query = "") {
+
+  const genre =
+    document.getElementById(
+      "genre-select"
+    ).value;
+
+  const list =
+    document.getElementById(
+      "book-list"
+    );
+
+  const countEl =
+    document.getElementById(
+      "book-count"
+    );
+
+  list.innerHTML =
+    `<div class="loading">Searching…</div>`;
+
+  try {
+
+    const params =
+      new URLSearchParams({
+        search: query,
+        limit: 25
+      });
+
+    if (genre)
+      params.set(
+        "genre",
+        genre
+      );
+
+    const r =
+      await fetch(
+        `${API}/api/books?${params.toString()}`
+      );
+
+    if (!r.ok)
+      throw new Error("Catalog unavailable");
+
+    const data =
+      await r.json();
+
+    countEl.textContent =
+      query || genre
+        ? `${data.total} of ${data.total_catalog.toLocaleString()} titles match`
+        : `showing 25 of ${data.total_catalog.toLocaleString()} titles`;
+
+    if (
+      data.results.length === 0
+    ) {
+
+      list.innerHTML = `
+        <div class="empty">
+          No titles match
+          ${query ? `"${escapeHtml(query)}"` : ""}
+          ${genre ? " in this genre" : ""}.
+          <br><br>
+          This catalog is the goodbooks-10k dataset —
+          10,000 well-known, mostly English-language titles.
+          A specific book may simply not be in that list.
+        </div>
+      `;
+
+      return;
+
+    }
+
+    list.innerHTML =
+      data.results
+        .map(
+          b =>
+            bookCardHtml(
+              b,
+              {
+                action: "similar",
+                tags: true
+              }
+            )
+        )
+        .join("");
+
+    list
+      .querySelectorAll(
+        ".similar-btn"
+      )
+      .forEach(
+        btn =>
+          btn.addEventListener(
+            "click",
+            () =>
+              getSimilar(
+                btn.dataset.i
+              )
+          )
+      );
+
+  } catch (e) {
+
+    console.error(e);
+
+    list.innerHTML = `
+      <div class="empty">
+        Catalog could not be loaded.
+        Please check that the API is running.
+      </div>
+    `;
+
+    countEl.textContent = "";
+
+  }
+
 }
 
 async function getSimilar(i) {
-  const panel = document.getElementById("rec-panel");
-  const label = document.getElementById("rec-panel-label");
-  panel.innerHTML = `<div class="loading">Scoring similarity…</div>`;
-  const r = await fetch(`${API}/api/recommend/${i}?k=8`);
-  const data = await r.json();
-  label.textContent = `SIMILAR TO — ${data.seed.title}`;
-  panel.innerHTML = data.recommendations.map(rec => bookCardHtml(rec, { action: "similarity" })).join("");
-}
 
-document.getElementById("book-search").addEventListener("input", (e) => {
-  clearTimeout(searchTimer);
-  const q = e.target.value;
-  searchTimer = setTimeout(() => loadBooks(q), 250);
-});
+  const panel =
+    document.getElementById(
+      "rec-panel"
+    );
 
-// ---- catalog: personalized reader recommend (real ALS model) ----
-async function pullRandomReader() {
-  const shelfEl = document.getElementById("reader-shelf");
-  const recEl = document.getElementById("reader-recs");
-  shelfEl.innerHTML = `<div class="loading">Pulling a reader's card…</div>`;
-  recEl.innerHTML = "";
+  const label =
+    document.getElementById(
+      "rec-panel-label"
+    );
+
+  panel.innerHTML =
+    `<div class="loading">Scoring similarity…</div>`;
+
   try {
-    const r = await fetch(`${API}/api/random_reader`);
-    if (!r.ok) throw new Error();
-    const data = await r.json();
-    shelfEl.dataset.userId = data.user_id;
-    shelfEl.innerHTML = `<div class="section-label" style="margin-bottom:6px;">READER #${data.user_id} — already rated highly:</div>` +
-      data.shelf.map(b => `<div class="shelf-item"><span>${b.title}</span><span style="color:var(--pencil); font-size:0.72rem;">${b.authors}</span></div>`).join("");
-    getPersonalized(data.user_id);
+
+    const r =
+      await fetch(
+        `${API}/api/recommend/${i}?k=8`
+      );
+
+    if (!r.ok)
+      throw new Error(
+        "Recommendation unavailable"
+      );
+
+    const data =
+      await r.json();
+
+    label.textContent =
+      `SIMILAR TO — ${data.seed.title}`;
+
+    panel.innerHTML =
+      data.recommendations
+        .map(
+          rec =>
+            bookCardHtml(
+              rec,
+              {
+                action: "similarity"
+              }
+            )
+        )
+        .join("");
+
   } catch (e) {
-    shelfEl.innerHTML = `<div class="empty">Demo reader shelves not available on this deployment.</div>`;
+
+    console.error(e);
+
+    panel.innerHTML = `
+      <div class="empty">
+        Similar titles could not be loaded.
+      </div>
+    `;
+
   }
+
 }
 
-async function getPersonalized(userId) {
-  const recEl = document.getElementById("reader-recs");
-  const label = document.getElementById("reader-recs-label");
-  const genre = document.getElementById("reader-genre-select").value;
-  recEl.innerHTML = `<div class="loading">Scoring against ALS factors…</div>`;
-  try {
-    const params = new URLSearchParams({ k: 8 });
-    if (genre) params.set("genre", genre);
-    const r = await fetch(`${API}/api/recommend_for_reader/${userId}?${params.toString()}`);
-    if (!r.ok) throw new Error();
-    const data = await r.json();
-    if (data.recommendations.length === 0) {
-      recEl.innerHTML = `<div class="empty">No titles in this genre scored for reader #${userId}.</div>`;
-      return;
+document
+  .getElementById("book-search")
+  .addEventListener(
+    "input",
+    e => {
+
+      clearTimeout(
+        searchTimer
+      );
+
+      const q =
+        e.target.value;
+
+      searchTimer =
+        setTimeout(
+          () => loadBooks(q),
+          250
+        );
+
     }
-    label.textContent = data.method;
-    recEl.innerHTML = data.recommendations.map(rec => bookCardHtml(rec, { action: "score" })).join("");
+  );
+
+/* ================================= personalized reader recommend ===== */
+
+async function pullRandomReader() {
+
+  const shelfEl =
+    document.getElementById(
+      "reader-shelf"
+    );
+
+  const recEl =
+    document.getElementById(
+      "reader-recs"
+    );
+
+  shelfEl.innerHTML =
+    `<div class="loading">Pulling a reader's card…</div>`;
+
+  recEl.innerHTML = "";
+
+  try {
+
+    const r =
+      await fetch(
+        `${API}/api/random_reader`
+      );
+
+    if (!r.ok)
+      throw new Error();
+
+    const data =
+      await r.json();
+
+    shelfEl.dataset.userId =
+      data.user_id;
+
+    shelfEl.innerHTML =
+      `
+        <div
+          class="section-label"
+          style="margin-bottom:6px;"
+        >
+          READER #${escapeHtml(data.user_id)}
+          — already rated highly:
+        </div>
+      ` +
+      data.shelf
+        .map(
+          b => `
+            <div class="shelf-item">
+              <span>
+                ${escapeHtml(b.title)}
+              </span>
+
+              <span
+                style="
+                  color:var(--pencil);
+                  font-size:0.72rem;
+                "
+              >
+                ${escapeHtml(b.authors || "")}
+              </span>
+            </div>
+          `
+        )
+        .join("");
+
+    getPersonalized(
+      data.user_id
+    );
+
   } catch (e) {
-    recEl.innerHTML = `<div class="empty">ALS model factors not bundled with this deployment.</div>`;
+
+    shelfEl.innerHTML = `
+      <div class="empty">
+        Demo reader shelves not available
+        on this deployment.
+      </div>
+    `;
+
   }
+
 }
 
-document.getElementById("random-reader-btn").addEventListener("click", pullRandomReader);
+async function getPersonalized(
+  userId
+) {
 
-// ---- architecture ----
-async function loadArchitecture() {
-  const r = await fetch(`${API}/api/architecture`);
-  const data = await r.json();
-  document.getElementById("phase-list").outerHTML = `<div id="phase-list" class="phase-scroll">
-    ${data.phases.map(p => `<div class="phase-row"><div class="tag">${p.phase}</div><div><div>${p.name}</div><div class="file">${p.file}</div></div></div>`).join("")}
-  </div>`;
+  const recEl =
+    document.getElementById(
+      "reader-recs"
+    );
+
+  const label =
+    document.getElementById(
+      "reader-recs-label"
+    );
+
+  const genre =
+    document.getElementById(
+      "reader-genre-select"
+    ).value;
+
+  recEl.innerHTML =
+    `<div class="loading">Scoring against ALS factors…</div>`;
+
+  try {
+
+    const params =
+      new URLSearchParams({
+        k: 8
+      });
+
+    if (genre)
+      params.set(
+        "genre",
+        genre
+      );
+
+    const r =
+      await fetch(
+        `${API}/api/recommend_for_reader/${userId}?${params.toString()}`
+      );
+
+    if (!r.ok)
+      throw new Error();
+
+    const data =
+      await r.json();
+
+    if (
+      data.recommendations.length === 0
+    ) {
+
+      recEl.innerHTML = `
+        <div class="empty">
+          No titles in this genre scored
+          for reader #${escapeHtml(userId)}.
+        </div>
+      `;
+
+      return;
+
+    }
+
+    label.textContent =
+      data.method;
+
+    recEl.innerHTML =
+      data.recommendations
+        .map(
+          rec =>
+            bookCardHtml(
+              rec,
+              {
+                action: "score"
+              }
+            )
+        )
+        .join("");
+
+  } catch (e) {
+
+    recEl.innerHTML = `
+      <div class="empty">
+        ALS model factors not bundled
+        with this deployment.
+      </div>
+    `;
+
+  }
+
 }
 
-// ---- limitations ----
-function mdToHtml(md) {
-  return md.split("\n\n").map(block => {
-    if (block.startsWith("### ")) return `<h3>${block.slice(4)}</h3>`;
-    if (block.startsWith("## ")) return `<h2>${block.slice(3)}</h2>`;
-    if (block.startsWith("# ")) return `<h1>${block.slice(2)}</h1>`;
-    if (block.startsWith("> ")) return `<blockquote>${block.replace(/^> ?/gm, "")}</blockquote>`;
-    if (block.trim().startsWith("- ")) return `<ul>${block.split("\n").map(l => `<li>${l.replace(/^- /, "")}</li>`).join("")}</ul>`;
-    return `<p>${block.replace(/\n/g, " ")}</p>`;
-  }).join("\n").replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/`([^`]+)`/g, "<code>$1</code>");
-}
+document
+  .getElementById(
+    "random-reader-btn"
+  )
+  .addEventListener(
+    "click",
+    pullRandomReader
+  );
 
-async function loadLimitations() {
-  const r = await fetch(`${API}/api/limitations`);
-  const data = await r.json();
-  document.getElementById("limitations-content").innerHTML =
-    mdToHtml(data.honest_limitations_from_readme || "") +
-    `<h2>Compute tradeoffs (MF &amp; LightGCN)</h2>` +
-    mdToHtml(data.compute_tradeoffs_md || "");
-}
+/* ======================================================== boot ===== */
 
-// ---- boot ----
 (async function init() {
+
   await loadStats();
-  const rows = await loadLeaderboard();
-  await loadModelPicker(rows);
-  await loadGenres();
+
+  try {
+    await loadGenres();
+  } catch (e) {
+    console.error(e);
+  }
+
   await loadBooks();
-  await loadArchitecture();
-  await loadLimitations();
+
+  renderShelf();
+
 })();
 </script>
+
 </body>
 </html>
