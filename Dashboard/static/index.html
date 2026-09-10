@@ -1161,31 +1161,55 @@ async function loadStats() {
 /* ==================================================== shelf ===== */
 
 const SHELF_KEY = "the-drawer-shelf";
+const SHELF_BACKUP_KEY = "the-drawer-shelf-backup-v1";
+
+function parseShelfValue(value) {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
+}
 
 function getShelf() {
+  // Primary shelf.
+  const primary = parseShelfValue(localStorage.getItem(SHELF_KEY));
+  if (primary.length) return primary;
 
-  try {
-
-    const saved =
-      JSON.parse(
-        localStorage.getItem(SHELF_KEY) || "[]"
-      );
-
-    return Array.isArray(saved) ? saved : [];
-
-  } catch (e) {
-
-    return [];
-
+  // Recovery copy: protects the user's saved books if the primary value
+  // becomes corrupted or is accidentally overwritten during a cover refresh.
+  const backup = parseShelfValue(localStorage.getItem(SHELF_BACKUP_KEY));
+  if (backup.length) {
+    try {
+      localStorage.setItem(SHELF_KEY, JSON.stringify(backup));
+    } catch (e) {}
+    return backup;
   }
 
+  return [];
 }
 
 function saveShelf(shelf) {
-  localStorage.setItem(
-    SHELF_KEY,
-    JSON.stringify(shelf)
-  );
+  if (!Array.isArray(shelf)) return;
+
+  const serialized = JSON.stringify(shelf);
+
+  // Write the backup first. If the primary write ever fails, the user's
+  // original shelf remains recoverable.
+  try {
+    localStorage.setItem(SHELF_BACKUP_KEY, serialized);
+  } catch (e) {}
+
+  try {
+    localStorage.setItem(SHELF_KEY, serialized);
+  } catch (e) {
+    // Never replace an existing shelf with an empty/corrupt value.
+    try {
+      const backup = localStorage.getItem(SHELF_BACKUP_KEY);
+      if (backup) localStorage.setItem(SHELF_KEY, backup);
+    } catch (restoreError) {}
+  }
 }
 
 function isOnShelf(bookId) {
@@ -1272,55 +1296,145 @@ function updateShelfButtons(bookId) {
 
 }
 
+/* ============================================================
+   COVER IMAGE HANDLING
+   ============================================================ */
+
 /*
- * Progressive cover-image fallback.
+ * Catalog and Shelf deliberately use different cover chains.
  *
- * Each book can carry several candidate cover URLs, biggest/best first
- * (see dashboard.py: Open Library large -> Goodreads medium -> Goodreads
- * small). Not every candidate is guaranteed to actually load -- Open
- * Library doesn't have every ISBN indexed -- so this tries each one in
- * turn and only falls back to the plain letter-spine placeholder once
- * every candidate has failed.
+ * Catalog:
+ *   normal cover_urls
+ *
+ * Shelf:
+ *   shelf_cover_urls
+ *
+ * The Shelf gets its own high-resolution candidates because its
+ * images are much larger on screen.
  */
-function coverCandidates(book) {
-  if (Array.isArray(book.cover_urls) && book.cover_urls.length) {
-    return book.cover_urls;
+
+function coverCandidates(book, mode = "catalog") {
+
+  const preferred =
+    mode === "shelf"
+      ? book.shelf_cover_urls
+      : book.cover_urls;
+
+  if (
+    Array.isArray(preferred)
+    && preferred.length
+  ) {
+
+    return [
+      ...new Set(
+        preferred.filter(Boolean)
+      )
+    ];
   }
-  // backward-compat: older saved shelf entries (from before this fix)
-  // only have a single cover_url string.
-  return book.cover_url ? [book.cover_url] : [];
+
+  /*
+   * Backward compatibility for old objects stored in localStorage.
+   */
+  if (
+    Array.isArray(book.cover_urls)
+    && book.cover_urls.length
+  ) {
+
+    return [
+      ...new Set(
+        book.cover_urls.filter(Boolean)
+      )
+    ];
+  }
+
+  if (book.cover_url) {
+    return [book.cover_url];
+  }
+
+  return [];
 }
 
+
+/*
+ * Try the next cover URL if the current image fails.
+ */
 function handleCoverError(img) {
+
   let remaining = [];
+
   try {
-    remaining = JSON.parse(img.dataset.remaining || "[]");
+
+    remaining = JSON.parse(
+      img.dataset.remaining || "[]"
+    );
+
   } catch (e) {
+
     remaining = [];
   }
-  if (remaining.length === 0) {
+
+  if (
+    remaining.length === 0
+  ) {
+
     img.style.display = "none";
+
     return;
   }
-  const next = remaining.shift();
-  img.dataset.remaining = JSON.stringify(remaining);
+
+  const next =
+    remaining.shift();
+
+  img.dataset.remaining =
+    JSON.stringify(remaining);
+
   img.src = next;
 }
 
-function coverImgHtml(book) {
-  const candidates = coverCandidates(book);
-  if (candidates.length === 0) return "";
-  const [first, ...rest] = candidates;
+
+/*
+ * Render an image using the appropriate cover chain.
+ */
+function coverImgHtml(
+  book,
+  mode = "catalog"
+) {
+
+  const candidates =
+    coverCandidates(
+      book,
+      mode
+    );
+
+  if (
+    candidates.length === 0
+  ) {
+
+    return "";
+  }
+
+  const [
+    first,
+    ...rest
+  ] = candidates;
+
   return `
     <img
       src="${escapeHtml(first)}"
-      data-remaining='${escapeHtml(JSON.stringify(rest))}'
+      data-remaining='${escapeHtml(
+        JSON.stringify(rest)
+      )}'
       alt=""
       loading="lazy"
       onerror="handleCoverError(this)"
     >
   `;
 }
+
+
+/* ============================================================
+   CATALOG BOOK COVER
+   ============================================================ */
 
 function shelfCoverHtml(book) {
 
@@ -1329,14 +1443,27 @@ function shelfCoverHtml(book) {
       .trim()[0]
       .toUpperCase();
 
-  const saved = isOnShelf(book.i);
+  const saved =
+    isOnShelf(book.i);
 
   const bookJson =
     JSON.stringify(book)
-      .replace(/&/g, "&amp;")
-      .replace(/'/g, "&#039;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+      .replace(
+        /&/g,
+        "&amp;"
+      )
+      .replace(
+        /'/g,
+        "&#039;"
+      )
+      .replace(
+        /</g,
+        "&lt;"
+      )
+      .replace(
+        />/g,
+        "&gt;"
+      );
 
   return `
     <div class="book-cover">
@@ -1345,7 +1472,10 @@ function shelfCoverHtml(book) {
         ${escapeHtml(initial)}
       </div>
 
-      ${coverImgHtml(book)}
+      ${coverImgHtml(
+        book,
+        "catalog"
+      )}
 
       <div class="cover-shelf-action">
 
@@ -1354,25 +1484,356 @@ function shelfCoverHtml(book) {
           data-shelf-id="${escapeHtml(book.i)}"
           data-book='${bookJson}'
           class="${saved ? "saved" : ""}"
-          onclick="event.stopPropagation(); handleShelfClick(this)"
-          title="${saved ? "Remove from your shelf" : "Add to your shelf"}"
+          onclick="
+            event.stopPropagation();
+            handleShelfClick(this)
+          "
+          title="${
+            saved
+              ? "Remove from your shelf"
+              : "Add to your shelf"
+          }"
         >
-                    <svg class="bookmark-icon" viewBox="0 0 24 30" aria-hidden="true">
-            <path d="M3.5 2.5h17v25L12 20.8 3.5 27.5z"></path>
+
+          <svg
+            class="bookmark-icon"
+            viewBox="0 0 24 30"
+            aria-hidden="true"
+          >
+            <path
+              d="M3.5 2.5h17v25L12 20.8 3.5 27.5z"
+            ></path>
           </svg>
+
         </button>
 
       </div>
 
     </div>
   `;
-
 }
 
-function renderShelf() {
 
-  const shelf =
-    getShelf();
+/* ============================================================
+   SHELF REFRESH
+   ============================================================ */
+
+/*
+ * IMPORTANT:
+ *
+ * localStorage contains a snapshot of the book object from the
+ * moment the user saved it.
+ *
+ * Therefore old shelf entries may still contain:
+ *
+ *   cover_url
+ *
+ * instead of:
+ *
+ *   shelf_cover_urls
+ *
+ * We refresh every saved book from the API whenever the Shelf
+ * is opened.
+ *
+ * This guarantees that the new high-resolution cover metadata
+ * reaches old saved books too.
+ */
+
+async function refreshShelfCovers() {
+  const shelf = getShelf();
+
+  if (!shelf.length) return shelf;
+
+  const COVER_CACHE_KEY = "the-drawer-cover-cache-v4";
+  let coverCache = {};
+
+  try {
+    coverCache = JSON.parse(localStorage.getItem(COVER_CACHE_KEY) || "{}");
+  } catch (e) {
+    coverCache = {};
+  }
+
+  const normalizeText = (value) =>
+    String(value || "")
+      .toLowerCase()
+      .replace(/&/g, " and ")
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/[^a-z0-9]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const cleanTitle = (value) =>
+    String(value || "")
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const authorParts = (value) =>
+    normalizeText(value).split(" ").filter(Boolean);
+
+  const titleScore = (wanted, candidate) => {
+    const a = normalizeText(wanted);
+    const b = normalizeText(candidate);
+    if (!a || !b) return 0;
+    if (a === b) return 70;
+    if (b.includes(a) || a.includes(b)) return 52;
+    const aWords = new Set(a.split(" "));
+    const bWords = new Set(b.split(" "));
+    const overlap = [...aWords].filter(w => bWords.has(w)).length;
+    const ratio = overlap / Math.max(aWords.size, bWords.size, 1);
+    if (ratio >= 0.8) return 45;
+    if (ratio >= 0.6) return 32;
+    if (ratio >= 0.4) return 20;
+    return 0;
+  };
+
+  const authorScore = (wanted, candidate) => {
+    const a = authorParts(wanted);
+    const b = authorParts(candidate);
+    if (!a.length || !b.length) return 0;
+    if (a[a.length - 1] === b[b.length - 1]) return 30;
+    const overlap = a.filter(word => b.includes(word)).length;
+    if (overlap >= 2) return 24;
+    if (overlap === 1) return 12;
+    return 0;
+  };
+
+  const yearScore = (wantedYear, candidateYear) => {
+    const y1 = Number(wantedYear);
+    const y2 = Number(candidateYear);
+    if (!Number.isFinite(y1) || !Number.isFinite(y2)) return 0;
+    const diff = Math.abs(y1 - y2);
+    if (diff === 0) return 18;
+    if (diff <= 3) return 13;
+    if (diff <= 10) return 7;
+    if (diff <= 25) return 2;
+    return 0;
+  };
+
+  /*
+   * goodbooks-10k / Goodreads cover URLs are often stored with an `s`
+   * size marker (small).  The same Goodreads asset can usually be requested
+   * with `l` (large), which preserves the original cover artwork instead of
+   * replacing it with a random edition from another service.
+   */
+  const goodreadsLargeCovers = (book) => {
+    const sourceUrls = [];
+
+    const add = (value) => {
+      if (!value) return;
+      if (Array.isArray(value)) {
+        value.forEach(add);
+        return;
+      }
+      const url = String(value).trim();
+      if (url) sourceUrls.push(url);
+    };
+
+    add(book.cover_url);
+    add(book.cover_urls);
+    add(book.image_url);
+    add(book.small_image_url);
+
+    const out = [];
+    const seen = new Set();
+
+    for (const raw of sourceUrls) {
+      let url = raw.replace(/^http:/i, "https:");
+
+      // Old goodreads URLs: .../books/1234567890s/1885.jpg
+      const large = url.replace(/(\/books\/\d+)s(\/[^/?#]+\.(?:jpg|jpeg|png))(?:[?#].*)?$/i, "$1l$2");
+      if (large !== url && !seen.has(large)) {
+        seen.add(large);
+        out.push(large);
+      }
+
+      // New Goodreads/Amazon CDN URLs can contain the same s/l marker.
+      const largeCdn = url.replace(/(\/books\/\d+)s(\/[^/?#]+\.(?:jpg|jpeg|png))(?:[?#].*)?$/i, "$1l$2");
+      if (largeCdn !== url && !seen.has(largeCdn)) {
+        seen.add(largeCdn);
+        out.push(largeCdn);
+      }
+    }
+
+    return out;
+  };
+
+  const googleCover = (links) => {
+    if (!links) return null;
+    const entries = [
+      [links.extraLarge, 16],
+      [links.large, 12],
+      [links.medium, 8],
+      [links.small, 4],
+      [links.thumbnail, 2],
+      [links.smallThumbnail, 1]
+    ];
+    for (const [rawUrl, quality] of entries) {
+      if (!rawUrl) continue;
+      let url = String(rawUrl)
+        .replace(/^http:/i, "https:")
+        .replace("&edge=curl", "");
+      if (url.includes("zoom=")) {
+        url = url.replace(/zoom=\d+/i, "zoom=2");
+      } else {
+        url += (url.includes("?") ? "&" : "?") + "zoom=2";
+      }
+      return { url, quality };
+    }
+    return null;
+  };
+
+  const getCandidates = async (book) => {
+    const title = cleanTitle(book.title);
+    const author = String(book.authors || "").trim();
+    const year = book.original_publication_year;
+    if (!title) return [];
+
+    const cacheKey = [
+      normalizeText(title),
+      normalizeText(author),
+      String(year || "")
+    ].join("|");
+
+    if (Array.isArray(coverCache[cacheKey]) && coverCache[cacheKey].length) {
+      return coverCache[cacheKey];
+    }
+
+    const googleQuery = author
+      ? `intitle:${title} inauthor:${author}`
+      : `intitle:${title}`;
+
+    const openLibraryParams = new URLSearchParams({
+      title,
+      ...(author ? { author } : {}),
+      limit: "20",
+      fields: "key,title,author_name,cover_i,first_publish_year,edition_key"
+    });
+
+    const [googleResult, openLibraryResult] = await Promise.allSettled([
+      fetch(
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(googleQuery)}&maxResults=20`
+      ).then(async response => {
+        if (!response.ok) return [];
+        const data = await response.json();
+        return data.items || [];
+      }),
+      fetch(
+        `https://openlibrary.org/search.json?${openLibraryParams.toString()}`
+      ).then(async response => {
+        if (!response.ok) return [];
+        const data = await response.json();
+        return data.docs || [];
+      })
+    ]);
+
+    const candidates = [];
+
+    // FIRST: preserve the Goodreads artwork already associated with the
+    // goodbooks-10k record, but request the large version of that exact cover.
+    // This is much more reliable for Shelf presentation than selecting an
+    // arbitrary edition returned by a third-party search.
+    for (const url of goodreadsLargeCovers(book)) {
+      candidates.push({ url, score: 1000 });
+    }
+
+    if (googleResult.status === "fulfilled") {
+      for (const item of googleResult.value) {
+        const info = item.volumeInfo || {};
+        const cover = googleCover(info.imageLinks);
+        if (!cover) continue;
+        const candidateAuthor = Array.isArray(info.authors)
+          ? info.authors.join(" ")
+          : "";
+        const match = String(info.publishedDate || "").match(/\d{4}/);
+        const candidateYear = match ? match[0] : "";
+        const score =
+          titleScore(title, info.title) +
+          authorScore(author, candidateAuthor) +
+          yearScore(year, candidateYear) +
+          cover.quality;
+        candidates.push({ url: cover.url, score });
+      }
+    }
+
+    if (openLibraryResult.status === "fulfilled") {
+      for (const doc of openLibraryResult.value) {
+        if (!doc.cover_i) continue;
+        const candidateAuthor = Array.isArray(doc.author_name)
+          ? doc.author_name.join(" ")
+          : "";
+        const url =
+          `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg?default=false`;
+        const score =
+          titleScore(title, doc.title) +
+          authorScore(author, candidateAuthor) +
+          yearScore(year, doc.first_publish_year) +
+          10;
+        candidates.push({ url, score });
+      }
+    }
+
+    const unique = [];
+    const seen = new Set();
+    candidates.sort((a, b) => b.score - a.score).forEach(candidate => {
+      if (!candidate.url || seen.has(candidate.url)) return;
+      seen.add(candidate.url);
+      unique.push(candidate.url);
+    });
+
+    const result = unique.slice(0, 6);
+    if (result.length) coverCache[cacheKey] = result;
+    return result;
+  };
+
+  const updatedShelf = await Promise.all(
+    shelf.map(async (book) => {
+      try {
+        const candidates = await getCandidates(book);
+        if (!candidates.length) return book;
+        return {
+          ...book,
+          shelf_cover_urls: candidates,
+          shelf_cover_url: candidates[0]
+        };
+      } catch (error) {
+        return book;
+      }
+    })
+  );
+
+  try {
+    localStorage.setItem(COVER_CACHE_KEY, JSON.stringify(coverCache));
+  } catch (e) {}
+
+  // Safety check: cover refresh is never allowed to replace the shelf with
+  // a partial/empty result. The number and IDs of saved books must remain
+  // exactly the same.
+  const sameShelf =
+    updatedShelf.length === shelf.length &&
+    updatedShelf.every((book, index) =>
+      String(book.i) === String(shelf[index].i)
+    );
+
+  if (!sameShelf) {
+    return shelf;
+  }
+
+  const changed = updatedShelf.some((book, index) =>
+    JSON.stringify(book.shelf_cover_urls) !==
+    JSON.stringify(shelf[index].shelf_cover_urls)
+  );
+
+  if (changed) saveShelf(updatedShelf);
+  return updatedShelf;
+}
+
+
+/* ============================================================
+   SHELF RENDER
+   ============================================================ */
+
+async function renderShelf() {
 
   const container =
     document.getElementById(
@@ -1384,6 +1845,12 @@ function renderShelf() {
       "shelf-count"
     );
 
+  /*
+   * Show the current local shelf immediately.
+   */
+  let shelf =
+    getShelf();
+
   count.textContent =
     `${shelf.length} ${
       shelf.length === 1
@@ -1391,19 +1858,45 @@ function renderShelf() {
         : "books"
     }`;
 
-  if (!shelf.length) {
+  if (
+    shelf.length === 0
+  ) {
 
     container.innerHTML = `
       <div class="empty shelf-empty">
-        Your shelf is empty.<br><br>
-        Hover over any book cover and choose
-        <strong>＋ Add to shelf</strong>.
+
+        Your shelf is empty.
+
+        <br><br>
+
+        Hover over any book cover
+        and choose
+        <strong>the bookmark icon</strong>
+        to save it.
+
       </div>
     `;
 
     return;
-
   }
+
+  /*
+   * Refresh all saved books from the API.
+   *
+   * This is what upgrades old localStorage entries.
+   */
+  shelf =
+    await refreshShelfCovers();
+
+  /*
+   * Update count after refresh.
+   */
+  count.textContent =
+    `${shelf.length} ${
+      shelf.length === 1
+        ? "book"
+        : "books"
+    }`;
 
   container.innerHTML =
     shelf
@@ -1419,10 +1912,22 @@ function renderShelf() {
 
         const bookJson =
           JSON.stringify(book)
-            .replace(/&/g, "&amp;")
-            .replace(/'/g, "&#039;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;");
+            .replace(
+              /&/g,
+              "&amp;"
+            )
+            .replace(
+              /'/g,
+              "&#039;"
+            )
+            .replace(
+              /</g,
+              "&lt;"
+            )
+            .replace(
+              />/g,
+              "&gt;"
+            );
 
         return `
           <div class="shelf-book">
@@ -1433,7 +1938,14 @@ function renderShelf() {
                 ${escapeHtml(initial)}
               </div>
 
-              ${coverImgHtml(book)}
+              <!--
+                IMPORTANT:
+                Shelf uses the high-resolution chain.
+              -->
+              ${coverImgHtml(
+                book,
+                "shelf"
+              )}
 
               <div class="cover-shelf-action">
 
@@ -1442,12 +1954,23 @@ function renderShelf() {
                   data-shelf-id="${escapeHtml(book.i)}"
                   data-book='${bookJson}'
                   class="${saved ? "saved" : ""}"
-                  onclick="event.stopPropagation(); handleShelfClick(this)"
+                  onclick="
+                    event.stopPropagation();
+                    handleShelfClick(this)
+                  "
                   title="Remove from your shelf"
                 >
-          <svg class="bookmark-icon" viewBox="0 0 24 30" aria-hidden="true">
-                              <path d="M3.5 2.5h17v25L12 20.8 3.5 27.5z"></path>
-                            </svg>
+
+                  <svg
+                    class="bookmark-icon"
+                    viewBox="0 0 24 30"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M3.5 2.5h17v25L12 20.8 3.5 27.5z"
+                    ></path>
+                  </svg>
+
                 </button>
 
               </div>
@@ -1458,44 +1981,46 @@ function renderShelf() {
 
               <div
                 class="shelf-book-title"
-                title="${escapeHtml(book.title)}"
+                title="${escapeHtml(
+                  book.title
+                )}"
               >
-                ${escapeHtml(book.title)}
+                ${escapeHtml(
+                  book.title
+                )}
               </div>
 
               <div class="shelf-book-meta">
-                ${escapeHtml(book.authors || "")}
-                ${
-                  book.year
-                    ? " · " + escapeHtml(book.year)
-                    : ""
-                }
+                ${escapeHtml(
+                  book.authors || "Unknown author"
+                )}
+                ·
+                ${escapeHtml(
+                  book.year || "—"
+                )}
               </div>
 
-              ${
-                book.average_rating !== null &&
-                book.average_rating !== undefined
-                  ? `
-                    <div class="shelf-book-rating">
-                      <span class="stars">
-                        ${starString(book.average_rating)}
-                      </span>
-                      <span class="rating-num">
-                        ${Number(book.average_rating).toFixed(2)}
-                      </span>
-                    </div>
-                  `
-                  : ""
-              }
+              <div class="shelf-book-rating">
+
+                <span class="stars">
+                  ★★★★★
+                </span>
+
+                <span class="rating-num">
+                  ${fmt(
+                    book.average_rating,
+                    2
+                  )}
+                </span>
+
+              </div>
 
             </div>
 
           </div>
         `;
-
       })
       .join("");
-
 }
 
 /* ========================================= shared book rendering ===== */
@@ -2185,7 +2710,7 @@ document
 
   await loadBooks();
 
-  renderShelf();
+  await renderShelf();
 
 })();
 </script>
