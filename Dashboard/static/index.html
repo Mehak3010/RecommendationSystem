@@ -82,25 +82,39 @@
     flex-direction: column;
   }
 
-  .brand {
-    padding: 0 20px 20px;
-    border-bottom: 1px solid #2C2B24;
-    margin-bottom: 8px;
-  }
+.brand {
+  padding: 0 20px 20px;
+  border-bottom: 1px solid #2C2B24;
+  margin-bottom: 8px;
+}
 
-  .brand h1 {
-    font-size: 1.15rem;
-    color: #EFE9DA;
-    line-height: 1.25;
-  }
+.brand-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 
-  .brand .sub {
-    font-family: var(--mono);
-    font-size: 0.68rem;
-    color: #8B8570;
-    margin-top: 5px;
-    letter-spacing: 0.02em;
-  }
+.brand-title h1 {
+  font-size: 1.15rem;
+  color: #EFE9DA;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.brand-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  display: block;
+}
+
+.brand .sub {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: #8B8570;
+  margin-top: 5px;
+  letter-spacing: 0.02em;
+}
 
   .drawer-tabs {
     display: flex;
@@ -809,7 +823,15 @@
 
   <nav>
     <div class="brand">
-      <h1>The Drawer</h1>
+      <div class="brand-title">
+        <h1>The Drawer</h1>
+        <img
+          src="/logo.png"
+          alt=""
+          class="brand-logo"
+        >
+      </div>
+
       <div class="sub">book recommender — 9 systems, one catalog</div>
     </div>
 
