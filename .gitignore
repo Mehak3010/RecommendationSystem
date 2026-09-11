@@ -33,15 +33,16 @@ data/raw/
 
 # Trained models / large binaries
 models/*.npy
-!models/als_item_factors.npy
-!models/als_user_factors.npy
 models/*.pt
-models/*.npy
 models/*.pkl
 models/*.joblib
 models/*.h5
 models/*.onnx
 *.faiss
+
+# Required for The Drawer personalized recommendations
+!models/als_item_factors.npy
+!models/als_user_factors.npy
 
 # Logs
 *.log
