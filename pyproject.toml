@@ -1,2 +1,18 @@
+[project]
+name = "the-drawer"
+version = "1.0.0"
+description = "The Drawer - Book Recommendation System"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pandas",
+    "numpy",
+    "scikit-learn",
+    "torch",
+    "faiss-cpu",
+    "implicit"
+]
+
 [tool.vercel]
 entrypoint = "Dashboard.dashboard:app"
